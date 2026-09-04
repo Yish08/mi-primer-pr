@@ -5,3 +5,9 @@ export async function getAllProducts() {
   console.log(response.data);
   return response.data;
 }
+
+export async function getProductById(id) {
+  const response = await apiClient.get(`/products/${id}`);
+  console.log(response.data);
+  return response.data;
+}

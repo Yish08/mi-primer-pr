@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import categoriesData from "../../data/categories.json";
 import Breadcrumb from "../../layout/Breadcrumb/Breadcrumb";
-import { getProductById } from "../../services/productService";
+import { getProductById } from "../../services/productsService";
 import Badge from "../common/Badge";
 import Button from "../common/Button";
 import ErrorMessage from "../common/ErrorMessage/ErrorMessage";
@@ -27,7 +27,18 @@ export default function ProductDetails({ productId }) {
           setProduct(foundProduct);
         }
       })
-      .catch(() => setError("Ocurrió un error al cargar el producto."))
+      .catch((err) => {
+        const status = err.response?.status;
+        if (status === 404) {
+          setError("Este producto no existe o fue removido");
+        } else if (status >= 500){
+          setError("Tuvimos un problema con el servidor. Intentalo mas tarde");
+        } else if (!err.response){
+          setError("No pudimos conectar, revisa tu conexion")
+        } else {
+          setError("Ocurrio un error al cargar el producto")
+        }
+      })
       .finally(() => setLoading(false));
   }, [productId]);
 
