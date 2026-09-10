@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Breadcrumb from "../../layout/Breadcrumb/Breadcrumb";
-import {
-  getCategoryById,
-  getProductsByCategoryAndChildren,
-} from "../../services/categoryService";
+import { getCategoryById, getProductByCategory } from "../../services/categoriesService";
 import ProductCard from "../ProductCard/ProductCard";
 import ErrorMessage from "../common/ErrorMessage/ErrorMessage";
 import Loading from "../common/Loading/Loading";
@@ -25,9 +22,8 @@ export default function CategoryProducts({ categoryId }) {
         // Cargar la categoría y sus productos
         const [categoryData, productsData] = await Promise.all([
           getCategoryById(categoryId),
-          getProductsByCategoryAndChildren(categoryId),
+          getProductByCategory(categoryId),
         ]);
-
         if (!categoryData) {
           setError("Categoría no encontrada");
           return;

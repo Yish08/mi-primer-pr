@@ -1,4 +1,5 @@
 import Product from "../models/Product.js";
+import Category from "../models/Category.js";
 
 // api/products/search?q=iPhone&category=Apple&minPrice=5000&maxPrice=20000&inStock=true&sort=name&order=asc&page=2&limit=5
 const searchProducts = async (req, res, next) => {
@@ -22,7 +23,12 @@ const searchProducts = async (req, res, next) => {
         { description: { $regex: q, $options: "i" } },
       ];
     }
-    if (category) filters.category = category;
+    if (category) {
+      const children = await Category.find({ parentCategory: category}).select("_id");
+      filters.category = children.length
+        ? {$in: [category, ...children.map((c) => c._id)]}
+        : category;
+    }
 
     if (minPrice || maxPrice) {
       filters.price = {};

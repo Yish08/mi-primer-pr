@@ -1,32 +1,43 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Icon from "../../components/common/Icon/Icon";
-import categoriesData from "../../data/categories.json";
+import { getAllCategories } from "../../services/categoriesService";
 import "./Navigation.css";
 
 const Navigation = ({ isMobile = false, onLinkClick }) => {
+  const [allCategories, setallCategories] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
-    // Obtener categorías principales (que son parent de otras categorías)
-    const allParentIds = new Set(
-      categoriesData
-        .filter((cat) => cat.parentCategory)
-        .map((cat) => cat.parentCategory._id)
-    );
+    const loadCategories = async () => {
+      try{
+        const data = await getAllCategories();
 
-    // Filtrar categorías que son padres o que no tienen parent
-    const mainCategories = categoriesData.filter(
-      (cat) => !cat.parentCategory || allParentIds.has(cat._id)
-    );
+        const allParentIds = new Set(
+          data
+            .filter((cat) => cat.parentCategory)
+            .map((cat) => cat.parentCategory._id)
+        );
 
-    setCategories(mainCategories);
+        // Filtrar categorías que son padres o que no tienen parent
+        const mainCategories = data.filter(
+          (cat) => !cat.parentCategory || allParentIds.has(cat._id)
+        );
+        
+        setallCategories(data);
+        setCategories(mainCategories);
+      } catch (err){
+        setallCategories([]);
+        setCategories([]);
+      }
+    };
+    loadCategories();
   }, []);
 
   // Función para obtener subcategorías de una categoría principal
   const getSubcategories = (parentId) => {
-    const subcategories = categoriesData.filter(
+    const subcategories = allCategories.filter(
       (cat) => cat.parentCategory && cat.parentCategory._id === parentId
     );
     return subcategories.sort((a, b) => a.name.localeCompare(b.name));
