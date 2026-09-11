@@ -11,3 +11,17 @@ export async function getProductById(id) {
   console.log(response.data);
   return response.data;
 }
+
+export async function searchProducts(query) {
+    const response = await apiClient.get("/products/search", {
+        params: { q: query },
+    });
+    return response.data.products;
+}
+
+export async function searchProductsCompleto({ q, category } = {}) {
+  const response = await apiClient.get("/products/search", {
+    params: { q, category },   
+  });
+  return response.data.products;
+}

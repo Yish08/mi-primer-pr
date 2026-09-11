@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { fetchProducts } from "../../services/productService";
+import { searchProducts } from "../../services/productsService";
 import List from "../List/List";
 import "./SearchResultsList.css";
 
@@ -16,7 +16,7 @@ export default function SearchResultsList() {
     const loadProducts = async () => {
       try {
         setLoading(true);
-        const data = await fetchProducts();
+        const data = await searchProducts(query);
         if (isMounted) setProducts(data);
       } finally {
         if (isMounted) setLoading(false);
@@ -26,37 +26,23 @@ export default function SearchResultsList() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [query]);
 
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState("asc");
 
-  const filteredProducts = useMemo(() => {
-    if (!query) return [];
-    const normalizedQuery = query.toLowerCase();
-    let result = products.filter((product) => {
-      const matchesName = product.name.toLowerCase().includes(normalizedQuery);
-      const matchesDescription = product.description
-        ?.toLowerCase()
-        .includes(normalizedQuery);
-      const matchesCategory = product.category?.name
-        ?.toLowerCase()
-        .includes(normalizedQuery);
-      return matchesName || matchesDescription || matchesCategory;
-    });
+  const sortedProducts = useMemo(() => {
     // Ordenar
-    result = result.sort((a, b) => {
+    return [...products].sort((a, b) => {
       let valA = sortBy === "price" ? a.price : a.name.toLowerCase();
       let valB = sortBy === "price" ? b.price : b.name.toLowerCase();
       if (valA < valB) return sortOrder === "asc" ? -1 : 1;
       if (valA > valB) return sortOrder === "asc" ? 1 : -1;
-      return 0;
     });
-    return result;
-  }, [products, query, sortBy, sortOrder]);
+  }, [products, sortBy, sortOrder]);
 
   const hasQuery = query.length > 0;
-  const showNoResults = hasQuery && !loading && filteredProducts.length === 0;
+  const showNoResults = hasQuery && !loading && sortedProducts.length === 0;
 
   const handleQueryChange = (event) => {
     const value = event.target.value;
@@ -116,7 +102,7 @@ export default function SearchResultsList() {
       )}
       {!loading && hasQuery && !showNoResults && (
         <List
-          products={filteredProducts}
+          products={sortedProducts}
           layout="vertical"
           title={`Resultados para "${query}"`}
         />
