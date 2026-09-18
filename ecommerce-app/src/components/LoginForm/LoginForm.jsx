@@ -35,15 +35,6 @@ export default function LoginForm() {
     <div className="login-container">
       <div className="login-card">
         <h2>Iniciar Sesión</h2>
-        <div className="demo-users">
-          <h4>Usuarios de prueba:</h4>
-          <div className="user-demo">
-            <strong>Cliente:</strong> cliente@email.com / cliente123
-          </div>
-          <div className="user-demo">
-            <strong>Admin:</strong> admin@email.com / admin123
-          </div>
-        </div>
         <form className="login-form" onSubmit={onSubmit}>
           <div className="form-group">
             <Input
