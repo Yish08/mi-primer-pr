@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useCart } from "../../context/CartContext";
-import categoriesData from "../../data/categories.json";
+import { useCart } from "../../context/CartContext";  
 import Breadcrumb from "../../layout/Breadcrumb/Breadcrumb";
 import { getProductById } from "../../services/productsService";
 import Badge from "../common/Badge";
@@ -42,16 +41,7 @@ export default function ProductDetails({ productId }) {
       .finally(() => setLoading(false));
   }, [productId]);
 
-  const resolvedCategory = useMemo(() => {
-    if (!product?.category) return null;
-    return (
-      categoriesData.find((cat) => cat._id === product.category._id) ||
-      categoriesData.find(
-        (cat) => cat.name.toLowerCase() === product.category.name?.toLowerCase()
-      ) ||
-      null
-    );
-  }, [product]);
+  const resolvedCategory = product?.category || null;
   const categorySlug = resolvedCategory?._id || product?.category?.name || null;
 
   const handleAddToCart = () => {
@@ -85,18 +75,7 @@ export default function ProductDetails({ productId }) {
 
   return (
     <div className="product-details-container">
-      <Breadcrumb
-        items={[
-          { label: "Inicio", to: "/" },
-          categorySlug
-            ? {
-                label: resolvedCategory?.name || category?.name || "Categoría",
-                to: `/category/${categorySlug}`,
-              }
-            : { label: "Categoría" },
-          { label: name },
-        ]}
-      />
+      <Breadcrumb categories={resolvedCategory}/>
       <div className="product-details-main">
         <div className="product-details-image">
           <img
