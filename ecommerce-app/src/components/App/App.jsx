@@ -6,6 +6,7 @@ import CategoryPage from "../../pages/CategoryPage";
 import Checkout from "../../pages/Checkout";
 import Home from "../../pages/Home";
 import Login from "../../pages/Login";
+import Register from "../../pages/Register"
 import OrderConfirmation from "../../pages/OrderConfirmation";
 import Orders from "../../pages/Orders";
 import Product from "../../pages/Product";
@@ -24,6 +25,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             <Route path="/search" element={<SearchResults />} />
             <Route path="/product/:productId" element={<Product />} />
             <Route path="/category/:categoryId" element={<CategoryPage />} />

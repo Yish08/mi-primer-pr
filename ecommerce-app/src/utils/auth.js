@@ -1,4 +1,15 @@
-import { loginRequest } from "../services/authService";
+import { loginRequest, registerRequest } from "../services/authService";
+
+
+export async function register(name, email, password, phone) {
+  try{
+    await registerRequest(name, email, password, phone);
+    return await login(email, password);
+  }catch (err){
+    const msg = err.response?.data?.message ||  "Error al crear la cuenta";
+    return { success: false, error: msg };
+  }
+}
 
 export async function login(email, password) {
   try {
