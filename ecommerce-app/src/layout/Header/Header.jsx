@@ -18,7 +18,7 @@ export default function Header() {
   const navigate = useNavigate();
 
   // Simular estado de autenticación - reemplazar con tu lógica real
-  const [isAuth, setIsAuth] = useState(true);
+  const [isAuth, setIsAuth] = useState(isAuthenticated());
   const [user, setUser] = useState(getCurrentUser());
 
   // Referencias para manejo de clicks fuera
