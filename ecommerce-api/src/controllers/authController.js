@@ -4,7 +4,7 @@ import User from "../models/User.js";
 
 const generateToken = (userId, name, role) => {
   return jwt.sign({ userId, name, role }, process.env.JWT_SECRET, {
-    expiresIn: "1h",
+    expiresIn: "20s",
   });
 };
 
@@ -79,4 +79,27 @@ const login = async (req, res, next) => {
   }
 };
 
-export { register, login };
+//Funcion nueva para generar un nuevo token con el refresh 
+const refresh = async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body;
+    
+    if (!refreshToken) {
+      return res.status(401).json({ message: "No se mando Refresh token"});
+    }
+
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_TOKEN);
+    const user = await User.findById(decoded.userId);
+
+    if (!user) {
+      return res.status(401).json({message : "Usuario no encontrado"})
+    }
+    
+    const token = generateToken(user._id, user.name, user.role);
+    res.status(200).json({ token });
+  } catch (error) {
+    return res.status(401).json({message: "Refresh Token Invalido"});
+  }
+}
+
+export { register, login, refresh };

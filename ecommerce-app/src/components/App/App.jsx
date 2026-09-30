@@ -33,7 +33,6 @@ function App() {
               path="/profile"
               element={
                 <ProtectedRoute
-                  redirectTo="/login"
                   allowedRoles={["admin", "customer", "cliente"]}
                 >
                   <Profile />

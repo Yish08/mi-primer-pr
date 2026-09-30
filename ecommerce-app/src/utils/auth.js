@@ -1,3 +1,4 @@
+import { func } from "prop-types";
 import { loginRequest, registerRequest } from "../services/authService";
 
 
@@ -15,6 +16,7 @@ export async function login(email, password) {
   try {
     const data = await loginRequest(email, password);
     localStorage.setItem("authToken", data.token);
+    localStorage.setItem("refreshToken", data.refreshToken);
     return { success: true};
   } catch (err) {
     const msg = err.response?.data?.message ||  "Error al iniciar sesión";
@@ -24,12 +26,22 @@ export async function login(email, password) {
 
 export function logout() {
   localStorage.removeItem("authToken");
-  localStorage.removeItem("userData");
+  localStorage.removeItem("refreshToken");
+}
+
+function decodeToken(token) {
+  try {
+    const paylod = token.split(".")[1];
+    return JSON.parse(atob(paylod));
+  } catch {
+    return null;
+  }
 }
 
 export function getCurrentUser() {
-  const userData = localStorage.getItem("userData");
-  return userData ? JSON.parse(userData) : null;
+  const token = localStorage.getItem("authToken");
+  if (!token) return null;
+  return decodeToken(token);
 }
 
 export function isAuthenticated() {
