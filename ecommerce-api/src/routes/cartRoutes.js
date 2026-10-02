@@ -7,6 +7,7 @@ import {
   createCart,
   updateCart,
   deleteCart,
+  addProductToCart,
 } from "../controllers/cartController.js";
 import validate from "../middlewares/validation.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
@@ -113,4 +114,5 @@ router.delete(
   deleteCart,
 );
 
+router.post("/cart/add", authMiddleware, addProductToCart)
 export default router;

@@ -33,7 +33,7 @@ async function getCartByUser(req, res, next) {
       .populate("user")
       .populate("products.product");
     if (!cart) {
-      return res.status(404).json({ message: "No cart found for this user" });
+      return res.status(200).json({ user: userId, products: [] });
     }
     res.json(cart);
   } catch (error) {

@@ -1,4 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { getCart, addToCartAPI } from "../services/cartService";
+import { getCurrentUser } from "../utils/auth";
 
 const CartContext = createContext();
 
@@ -21,11 +23,43 @@ export function CartProvider({ children }) {
     return calculateTotal(items);
   });
 
+  useEffect(() => {
+    const user = getCurrentUser();
+    if(!user) return;
+
+    getCart(user.userId)
+      .then((serverCart) =>{
+        if(serverCart.length > 0){
+          setCartItems((localCart) => {
+            return mergeCarts(localCart, serverCart)
+          })
+        } 
+      })
+      .catch(() => {
+        //Falta
+      });
+  }, []);
+
   // Actualizar localStorage cuando cambie el carrito
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cartItems));
     setTotal(calculateTotal(cartItems));
   }, [cartItems]);
+
+  function mergeCarts(localCart, serverCart){
+    const merged = [...serverCart];
+
+    localCart.forEach((localItem) => {
+      const i = merged.findIndex((item) => item._id === localItem._id);
+      if (i >= 0 ) {
+        merged[i].quantity = Math.max(merged[i].quantity, localItem.quantity);
+      } else {
+        merged.push(localItem);
+      }
+    });
+
+    return merged;
+  }
 
   const removeFromCart = (productId) => {
     setCartItems((prevItems) =>
@@ -59,6 +93,14 @@ export function CartProvider({ children }) {
       } else {
         return [...prevItems, { ...product, quantity }];
       }
+    });
+
+    // Llamada a la api
+    const user = getCurrentUser();
+    if(!user) return;
+    
+    addToCartAPI(user.userId, product._id, quantity).catch(() => {
+
     });
   };
 
