@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-
+import Cart from "../models/Cart.js";
 const generateToken = (userId, name, role) => {
   return jwt.sign({ userId, name, role }, process.env.JWT_SECRET, {
     expiresIn: "1h",
@@ -46,6 +46,7 @@ const register = async (req, res, next) => {
       phone,
     });
 
+    await Cart.create({ user: newUser._id, products: []}); 
     await newUser.save();
     res.status(201).json({ name, email, phone });
   } catch (error) {

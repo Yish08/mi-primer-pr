@@ -27,6 +27,7 @@ export async function login(email, password) {
 export function logout() {
   localStorage.removeItem("authToken");
   localStorage.removeItem("refreshToken");
+  localStorage.removeItem("cart")
 }
 
 function decodeToken(token) {

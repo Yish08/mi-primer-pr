@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { getCart, addToCartAPI } from "../services/cartService";
+import { getCart, addToCartAPI, replaceCart } from "../services/cartService";
 import { getCurrentUser } from "../utils/auth";
 
 const CartContext = createContext();
@@ -10,6 +10,23 @@ export function CartProvider({ children }) {
     const savedCart = localStorage.getItem("cart");
     return savedCart ? JSON.parse(savedCart) : [];
   });
+  const [cartId, setCartId] = useState(null);
+  const [initialized, setInitialized] = useState(false);
+
+  function mergeCarts(localCart, serverCart){
+    const merged = [...serverCart];
+
+    localCart.forEach((localItem) => {
+      const i = merged.findIndex((item) => item._id === localItem._id);
+      if (i >= 0 ) {
+        merged[i].quantity = Math.max(merged[i].quantity, localItem.quantity);
+      } else {
+        merged.push(localItem);
+      }
+    });
+
+    return merged;
+  }
 
   // Calcular el total basado en los items del carrito
   const calculateTotal = (items) => {
@@ -29,6 +46,7 @@ export function CartProvider({ children }) {
 
     getCart(user.userId)
       .then((serverCart) =>{
+        setCartId(serverCart.cartId)
         if(serverCart.length > 0){
           setCartItems((localCart) => {
             return mergeCarts(localCart, serverCart)
@@ -37,29 +55,20 @@ export function CartProvider({ children }) {
       })
       .catch(() => {
         //Falta
-      });
+      })
+      .finally(() => setInitialized(true));
   }, []);
 
-  // Actualizar localStorage cuando cambie el carrito
+  // Actualizar localStorage y servidor cuando cambie el carrito o tenga cartId o inical cambie 
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cartItems));
     setTotal(calculateTotal(cartItems));
-  }, [cartItems]);
 
-  function mergeCarts(localCart, serverCart){
-    const merged = [...serverCart];
-
-    localCart.forEach((localItem) => {
-      const i = merged.findIndex((item) => item._id === localItem._id);
-      if (i >= 0 ) {
-        merged[i].quantity = Math.max(merged[i].quantity, localItem.quantity);
-      } else {
-        merged.push(localItem);
-      }
-    });
-
-    return merged;
-  }
+    const user = getCurrentUser();
+    if(user && initialized && cartId){
+      replaceCart(cartId, user.userId, cartItems).catch(() => {});
+    }
+  }, [cartItems, initialized, cartId]);
 
   const removeFromCart = (productId) => {
     setCartItems((prevItems) =>
@@ -93,14 +102,6 @@ export function CartProvider({ children }) {
       } else {
         return [...prevItems, { ...product, quantity }];
       }
-    });
-
-    // Llamada a la api
-    const user = getCurrentUser();
-    if(!user) return;
-    
-    addToCartAPI(user.userId, product._id, quantity).catch(() => {
-
     });
   };
 
