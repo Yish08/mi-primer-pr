@@ -15,6 +15,8 @@ import {
   getPaymentMethods,
 } from "../services/paymentService";
 import {
+  createAddress,
+  deleteAddress,
   getDefaultShippingAddress,
   getShippingAddresses,
 } from "../services/shippingService";
@@ -37,7 +39,7 @@ export default function Checkout() {
   const grandTotal = parseFloat(
     (subtotal + taxAmount + shippingCost).toFixed(2)
   );
-  debugger;
+  
   const [isOrderFinished, setIsOrderFinished] = useState(false);
 
   // Utilidad para formatear moneda (MXN)
@@ -52,7 +54,7 @@ export default function Checkout() {
   // Efecto de protección de ruta:
   // Si el carrito está vacío y no estamos en proceso de confirmación, redirigir al carrito.
   useEffect(() => {
-    debugger;
+    
     if (!cartItems || cartItems.length === 0) {
       if (!isOrderFinished) {
         navigate("/cart");
@@ -174,48 +176,51 @@ export default function Checkout() {
    * Elimina una dirección de la lista local.
    * Si la dirección eliminada estaba seleccionada, intenta seleccionar otra.
    */
-  const handleAddressDelete = (address) => {
-    const updatedAddresses = addresses.filter((add) => add._id !== address._id);
-    // Si borramos la seleccionada, seleccionamos la primera disponible o null
-    if (selectedAddress?._id === address._id) {
-      setSelectedAddress(updatedAddresses[0] || null);
+  const handleAddressDelete = async(address) => {
+    if(!window.confirm("¿Eliminar direccion?")) return;
+
+    try {
+      await deleteAddress(address._id);
+      const updated = await getShippingAddresses();
+      setAddresses(updated);
+      if (selectedAddress?._id === address._id) {
+        setSelectedAddress(updated[0] || null);
+      }
+    } catch (err) {
+      setLocalError("No se pudo eliminar la direccion");
     }
-    setAddresses(updatedAddresses);
   };
 
   /**
    * Maneja el guardado (Creación o Edición) de una dirección.
    * Actualiza la lista local y la selección automáticamente para mejorar UX.
    */
-  const handleAddressSubmit = (formData) => {
-    let updatedAddresses;
-    let newSelectedAddress = selectedAddress;
+  const handleAddressSubmit = async (formData) => {
+    try {
+      if (editingAddress){
 
-    if (editingAddress) {
-      // EDICIÓN: Actualizamos la lista
-      updatedAddresses = addresses.map((addr) =>
-        addr._id === editingAddress._id ? { ...addr, ...formData } : addr
-      );
-
-      // Si la que editamos estaba seleccionada, actualizamos también el estado de selección
-      // para que refleje los cambios inmediatamente en el resumen.
-      if (selectedAddress?._id === editingAddress._id) {
-        newSelectedAddress = updatedAddresses.find(
-          (a) => a._id === editingAddress._id
-        );
+      } else {
+        const payload = {
+          name: formData.name,
+          address: formData.address1,
+          city: formData.city,
+          postalCode: formData.postalCode,
+          country: formData.country,
+          state: formData.state,
+          isDefault : formData.default
+        }
+        await createAddress(payload);
       }
-    } else {
-      // CREACIÓN: Agregamos y seleccionamos automáticamente (UX tipo Amazon)
-      const newAddress = { _id: Date.now().toString(), ...formData };
-      updatedAddresses = [...addresses, newAddress];
-      newSelectedAddress = newAddress;
+      const updated = await getShippingAddresses();
+      setAddresses(updated);
+      setSelectedAddress(updated[updated.length-1]);
+    } catch (err) {
+      setLocalError("No se pudo guardar la direccion")
+    } finally {
+      setShowAddressForm(false);
+      setEditingAddress(null);
+      setAddressSectionOpen(false);
     }
-
-    setAddresses(updatedAddresses);
-    setSelectedAddress(newSelectedAddress);
-    setShowAddressForm(false);
-    setEditingAddress(null);
-    setAddressSectionOpen(false);
   };
 
   /**
@@ -367,7 +372,7 @@ export default function Checkout() {
     const orders = JSON.parse(localStorage.getItem("orders") || "[]");
     orders.push(order);
     localStorage.setItem("orders", JSON.stringify(orders));
-    debugger;
+    
     setIsOrderFinished(true);
     navigate("/order-confirmation", { state: { order } });
     clearCart();

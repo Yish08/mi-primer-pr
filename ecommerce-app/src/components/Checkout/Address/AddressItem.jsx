@@ -10,7 +10,7 @@ const AddressItem = ({ address, isSelected, onSelect, onEdit, onDelete }) => {
     >
       <div className="address-content">
         <h4>{address.name}</h4>
-        <p>{address.address1}</p>
+        <p>{address.address}</p>
         {address.address2 && <p>{address.address2}</p>}
         <p>
           {address.city}, {address.postalCode}

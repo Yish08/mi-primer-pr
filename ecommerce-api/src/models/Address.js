@@ -19,7 +19,6 @@ const addressSchema = new mongoose.Schema(
     },
     state: {
       type: String,
-      required: true,
       trim: true,
     },
     postalCode: {
@@ -36,7 +35,6 @@ const addressSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      required: true,
       max: 10,
       trim: true,
     },

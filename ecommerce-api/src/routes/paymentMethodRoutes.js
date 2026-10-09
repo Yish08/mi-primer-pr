@@ -66,7 +66,7 @@ const updatePaymentValidation = [
     .withMessage("Card number must be at most 16 characters"),
 ];
 
-router.get("/payment-methods", authMiddleware, isAdmin, getPaymentMethods);
+router.get("/payment-methods", authMiddleware, getPaymentMethods);
 
 router.get(
   "/payment-methods/:id",
