@@ -19,11 +19,6 @@ const orderIdValidation = [
 ];
 
 const createOrderValidation = [
-  body("user")
-    .notEmpty()
-    .withMessage("User is required")
-    .isMongoId()
-    .withMessage("User ID must be a valid MongoDB ObjectId"),
   body("products")
     .notEmpty()
     .withMessage("Products array is required")

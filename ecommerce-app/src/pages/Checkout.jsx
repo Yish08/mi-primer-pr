@@ -25,6 +25,7 @@ import {
   updateAddress,
 } from "../services/shippingService";
 import "./Checkout.css";
+import { createOrder } from "../services/orderService";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -64,7 +65,7 @@ export default function Checkout() {
         navigate("/cart");
       }
     }
-  }, [cartItems, navigate]);
+  }, [cartItems, navigate, isOrderFinished]);
 
   // --- ESTADOS LOCALES (Gestión de UI y Datos) ---
 
@@ -330,7 +331,7 @@ export default function Checkout() {
    * Crea el objeto de orden final y simula el envío.
    * Guarda en localStorage para persistencia simple y redirige.
    */
-  const handleCreateOrder = () => {
+  const handleCreateOrder = async () => {
     if (
       !selectedAddress ||
       !selectedPayment ||
@@ -340,30 +341,26 @@ export default function Checkout() {
       return;
     }
 
-    const order = {
-      id: Date.now().toString(),
-      date: new Date().toISOString(),
-      items: cartItems.map((item) => ({
-        ...item,
-        subtotal: item.price * item.quantity,
+    const orderData = {
+      products: cartItems.map((item) => ({
+        productId: item._id,
+        quantity: item.quantity,
+        price: item.price,  
       })),
-      subtotal,
-      tax: taxAmount,
-      shipping: shippingCost,
-      total: grandTotal,
-      shippingAddress: selectedAddress,
-      paymentMethod: selectedPayment,
-      status: "confirmed",
+      address: selectedAddress._id,
+      paymentMethod: selectedPayment._id,
+      totalPrice: grandTotal,
+      shippingCost: shippingCost,
     };
 
-    // Simulación de persistencia
-    const orders = JSON.parse(localStorage.getItem("orders") || "[]");
-    orders.push(order);
-    localStorage.setItem("orders", JSON.stringify(orders));
-    
-    setIsOrderFinished(true);
-    navigate("/order-confirmation", { state: { order } });
-    clearCart();
+    try{
+      const nuevaOrden = await createOrder(orderData);
+      setIsOrderFinished(true);
+      navigate("/order-confirmation", { state: { nuevaOrden } });
+      clearCart();
+    } catch (err){
+      setLocalError("No se pudo crear la orden. Intentalo de nuevo")
+    }
   };
 
   return (
@@ -416,8 +413,8 @@ export default function Checkout() {
             selected={selectedPayment}
             summaryContent={
               <div className="selected-payment">
-                <p>{selectedPayment?.alias}</p>
-                <p>**** {selectedPayment?.cardNumber?.slice(-4) || "----"}</p>
+                <p>{selectedPayment?.cardHolderName}</p>
+                <p>**** **** **** {selectedPayment?.cardNumber?.slice(-4) || "----"}</p>
               </div>
             }
             isExpanded={

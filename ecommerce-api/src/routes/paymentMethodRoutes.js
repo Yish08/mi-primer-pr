@@ -20,11 +20,6 @@ const paymentIdValidation = [
 ];
 
 const createPaymentValidation = [
-  body("user")
-    .notEmpty()
-    .withMessage("User is required")
-    .isMongoId()
-    .withMessage("User ID must be a valid MongoDB ObjectId"),
   body("type")
     .notEmpty()
     .withMessage("Payment type is required")
@@ -62,7 +57,7 @@ const updatePaymentValidation = [
     .withMessage("isDefault must be a boolean"),
   body("cardNumber")
     .optional()
-    .isLength({ max: 16 })
+    .isLength({ max: 20 })
     .withMessage("Card number must be at most 16 characters"),
 ];
 

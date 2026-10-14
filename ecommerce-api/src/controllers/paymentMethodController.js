@@ -24,8 +24,8 @@ const getPaymentMethodById = async (req, res, next) => {
 
 const createPaymentMethod = async (req, res, next) => {
   try {
+    const userId = req.user.userId;
     const {
-      user,
       type,
       cardNumber,
       cardHolderName,
@@ -38,11 +38,11 @@ const createPaymentMethod = async (req, res, next) => {
     } = req.body;
 
     if (isDefault) {
-      await PaymentMethod.updateMany({ user }, { isDefault: false });
+      await PaymentMethod.updateMany({ user:userId }, { isDefault: false });
     }
 
     const newPaymentMethod = await PaymentMethod.create({
-      user,
+      user: userId,
       type,
       cardNumber,
       cardHolderName,

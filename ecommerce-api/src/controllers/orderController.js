@@ -33,11 +33,12 @@ const getOrderById = async (req, res, next) => {
 
 const createOrder = async (req, res, next) => {
   try {
-    const { user, products, address, paymentMethod, totalPrice, shippingCost } =
+    const userId = req.user.userId;
+    const { products, address, paymentMethod, totalPrice, shippingCost } =
       req.body;
 
     const newOrder = await Order.create({
-      user,
+      user: userId,
       products,
       address,
       paymentMethod,
@@ -47,6 +48,8 @@ const createOrder = async (req, res, next) => {
 
     await newOrder.populate("user");
     await newOrder.populate("products.productId");
+    await newOrder.populate("address");
+    await newOrder.populate("paymentMethod");
 
     res.status(201).json(newOrder);
   } catch (error) {

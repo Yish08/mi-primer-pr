@@ -6,22 +6,22 @@ import "./OrderConfirmation.css";
 export default function OrderConfirmation() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { order } = location.state || {};
+  const { nuevaOrden } = location.state || {};
 
   useEffect(() => {
-    if (!order) {
+    if (!nuevaOrden) {
       navigate("/");
       return;
     }
-  }, [order, navigate]);
+  }, [nuevaOrden, navigate]);
 
-  const address = order.shippingAddress || {};
-  const subtotal = order.subtotal || 0;
-  const tax = order.tax || 0;
-  const shipping = order.shipping || 0;
-  const total = order.total || 0;
-  const orderDate = order.date
-    ? new Date(order.date).toLocaleDateString()
+  if (!nuevaOrden) return null;
+
+  const address = nuevaOrden.address || {};
+  const shipping = nuevaOrden.shippingCost || 0;
+  const total = nuevaOrden.totalPrice || 0;
+  const orderDate = nuevaOrden.createdAt
+    ? new Date(nuevaOrden.createdAt).toLocaleDateString()
     : "No disponible";
 
   // Utilidad para formatear moneda (MXN)
@@ -39,7 +39,7 @@ export default function OrderConfirmation() {
         </div>
         <h1>¡Gracias por tu compra!</h1>
         <p className="confirmation-message">
-          Tu pedido <strong>#{order.id || "N/A"}</strong> ha sido confirmado y
+          Tu pedido <strong>#{nuevaOrden._id || "N/A"}</strong> ha sido confirmado y
           está siendo procesado
         </p>
         <div className="confirmation-details">
@@ -51,22 +51,13 @@ export default function OrderConfirmation() {
             </p>
             <h3>Productos</h3>
             <ul className="order-items">
-              {(order.items || []).map((item) => (
+              {(nuevaOrden.products || []).map((item) => (
                 <li key={item._id}>
-                  {item.name} x {item.quantity} - {formatMoney(item.price)}
-                  <span>{formatMoney(item.subtotal)}</span>
+                  {item.productId?.name} x {item.quantity} - {formatMoney(item.price)}
                 </li>
               ))}
             </ul>
             <div className="order-totals">
-              <p>
-                <strong>Subtotal: </strong>
-                {formatMoney(subtotal)}
-              </p>
-              <p>
-                <strong>IVA: </strong>
-                {formatMoney(tax)}
-              </p>
               <p>
                 <strong>Envío: </strong>
                 {formatMoney(shipping)}
@@ -81,10 +72,8 @@ export default function OrderConfirmation() {
               <address>
                 {address.name || "No disponible"}
                 <br />
-                {address.address1 || ""}
-                {address.address1 && <br />}
-                {address.address2 || ""}
-                {address.address2 && <br />}
+                {address.address || ""}
+                {address.address && <br />}
                 {address.city && address.postalCode
                   ? `${address.city}, ${address.postalCode}`
                   : "Ciudad y código postal no disponibles"}
