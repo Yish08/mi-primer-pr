@@ -11,14 +11,18 @@ import ErrorMessage from "../components/common/ErrorMessage/ErrorMessage";
 import Loading from "../components/common/Loading/Loading";
 import { useCart } from "../context/CartContext";
 import {
+  createPaymetMethod,
+  deletePaymetMethod,
   getDefaultPaymentMethod,
   getPaymentMethods,
+  updatePaymetMethod,
 } from "../services/paymentService";
 import {
   createAddress,
   deleteAddress,
   getDefaultShippingAddress,
   getShippingAddresses,
+  updateAddress,
 } from "../services/shippingService";
 import "./Checkout.css";
 
@@ -198,18 +202,9 @@ export default function Checkout() {
   const handleAddressSubmit = async (formData) => {
     try {
       if (editingAddress){
-
+        await updateAddress(editingAddress._id, formData)
       } else {
-        const payload = {
-          name: formData.name,
-          address: formData.address1,
-          city: formData.city,
-          postalCode: formData.postalCode,
-          country: formData.country,
-          state: formData.state,
-          isDefault : formData.default
-        }
-        await createAddress(payload);
+        await createAddress(formData);
       }
       const updated = await getShippingAddresses();
       setAddresses(updated);
@@ -282,13 +277,18 @@ export default function Checkout() {
    * Si el pago eliminado estaba seleccionado, intenta seleccionar otro.
    * @param {Object} payment - El método de pago a eliminar.
    */
-  const handlePaymentDelete = (payment) => {
-    const updatedPayments = payments.filter((pay) => pay._id !== payment._id);
-    // Si borramos el seleccionado, seleccionamos el primero disponible o null
-    if (selectedPayment?._id === payment._id) {
-      setSelectedPayment(updatedPayments[0] || null);
+  const handlePaymentDelete = async (payment) => {
+    if (!window.confirm("Eliminar este método de pago?")) return;
+    try{
+      await deletePaymetMethod(payment._id);
+      const updated = await getPaymentMethods();
+      setPayments(updated);
+      if(selectedPayment?._id === payment._id){
+        setSelectedPayment(updated[0] || null);
+      }
+    } catch (err) {
+      setLocalError("No se pudo eliminar el método de pago")
     }
-    setPayments(updatedPayments);
   };
 
   /**
@@ -296,34 +296,22 @@ export default function Checkout() {
    * Actualiza la lista local y la selección automáticamente.
    * @param {Object} formData - Datos del formulario de pago.
    */
-  const handlePaymentSubmit = (formData) => {
-    let updatedPayments;
-    let newSelectedPayment = selectedPayment;
-
-    if (editingPayment) {
-      // EDICIÓN
-      updatedPayments = payments.map((pay) =>
-        pay._id === editingPayment._id ? { ...pay, ...formData } : pay
-      );
-
-      // Sincronizar selección si se editó el actual
-      if (selectedPayment?._id === editingPayment._id) {
-        newSelectedPayment = updatedPayments.find(
-          (p) => p._id === editingPayment._id
-        );
+  const handlePaymentSubmit = async (formData) => {
+    try {
+      if (editingPayment){
+        await updatePaymetMethod(editingPayment._id, formData)
+      } else {
+        await createPaymetMethod(formData);
       }
-    } else {
-      // CREACIÓN: Auto-seleccionar
-      const newPayment = { _id: Date.now().toString(), ...formData };
-      updatedPayments = [...payments, newPayment];
-      newSelectedPayment = newPayment;
+      const updated = await getPaymentMethods();
+      setPayments(updated);
+    } catch (err) {
+      setLocalError("No se pudo guardar el método de pago")
+    } finally {
+      setShowPaymentForm(false);
+      setEditingPayment(null);
+      setPaymentSectionOpen(false);
     }
-
-    setPayments(updatedPayments);
-    setSelectedPayment(newSelectedPayment);
-    setShowPaymentForm(false);
-    setEditingPayment(null);
-    setPaymentSectionOpen(false);
   };
 
   /**
@@ -393,7 +381,7 @@ export default function Checkout() {
             summaryContent={
               <div className="selected-address">
                 <p>{selectedAddress?.name}</p>
-                <p>{selectedAddress?.address1}</p>
+                <p>{selectedAddress?.address}</p>
                 <p>
                   {selectedAddress?.city}, {selectedAddress?.postalCode}
                 </p>

@@ -11,13 +11,13 @@ const AddressForm = ({
 }) => {
   const [formData, setFormData] = useState({
     name: "",
-    address1: "",
-    address2: "",
+    address: "",
     postalCode: "",
     city: "",
     country: "",
-    reference: "",
-    default: false,
+    isDefault: false,
+    phone: "",
+    state: "",
     ...initialValues,
   });
 
@@ -26,13 +26,13 @@ const AddressForm = ({
     if (initialValues && Object.keys(initialValues).length > 0) {
       setFormData({
         name: "",
-        address1: "",
-        address2: "",
+        address: "",
         postalCode: "",
         city: "",
         country: "",
-        reference: "",
-        default: false,
+        isDefault: false,
+        phone: "",
+        state: "",
         ...initialValues,
       });
     }
@@ -54,13 +54,14 @@ const AddressForm = ({
     if (!isEdit) {
       setFormData({
         name: "",
-        address1: "",
-        address2: "",
+        address: "",
         postalCode: "",
         city: "",
         country: "",
-        reference: "",
-        default: false,
+        isDefault: false,
+        phone: "",
+        state: "",
+        ...initialValues, 
       });
     }
   };
@@ -78,18 +79,19 @@ const AddressForm = ({
       />
 
       <Input
-        label="Dirección Línea 1"
-        name="address1"
-        value={formData.address1}
+        label="Dirección"
+        name="address"
+        value={formData.address}
         onChange={handleChange}
         required
       />
 
       <Input
-        label="Dirección Línea 2"
-        name="address2"
-        value={formData.address2}
+        label="Numero de telefono"
+        name="phone"
+        value={formData.phone}
         onChange={handleChange}
+        required
       />
 
       <Input
@@ -117,17 +119,18 @@ const AddressForm = ({
       />
 
       <Input
-        label="Referencia"
-        name="reference"
-        value={formData.reference}
+        label="Estado"
+        name="state"
+        value={formData.state}
         onChange={handleChange}
+        required
       />
 
       <div className="form-checkbox">
         <input
           type="checkbox"
-          name="default"
-          checked={formData.default}
+          name="isDefault"
+          checked={formData.isDefault}
           onChange={handleChange}
           id="defaultAddress"
         />

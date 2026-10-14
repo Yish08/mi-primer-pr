@@ -10,9 +10,9 @@ const PaymentForm = ({
   isEdit = false,
 }) => {
   const [formData, setFormData] = useState({
-    alias: "",
     cardNumber: "",
-    placeHolder: "",
+    type: "credit_card",
+    cardHolderName: "",
     expiryDate: "",
     cvv: "",
     isDefault: false,
@@ -23,9 +23,9 @@ const PaymentForm = ({
   useEffect(() => {
     if (initialValues && Object.keys(initialValues).length > 0) {
       setFormData({
-        alias: "",
         cardNumber: "",
-        placeHolder: "",
+        type: "credit_card",
+        cardHolderName: "",
         expiryDate: "",
         cvv: "",
         isDefault: false,
@@ -49,12 +49,13 @@ const PaymentForm = ({
     // Resetear formulario solo si es nuevo (no edición)
     if (!isEdit) {
       setFormData({
-        alias: "",
         cardNumber: "",
-        placeHolder: "",
+        type: "credit_card",
+        cardHolderName: "",
         expiryDate: "",
         cvv: "",
         isDefault: false,
+        ...initialValues,
       });
     }
   };
@@ -62,14 +63,6 @@ const PaymentForm = ({
   return (
     <form className="payment-form" onSubmit={handleSubmit}>
       <h3>{isEdit ? "Editar Método de Pago" : "Nuevo Método de Pago"}</h3>
-
-      <Input
-        label="Alias de la tarjeta"
-        name="alias"
-        value={formData.alias}
-        onChange={handleChange}
-        required
-      />
 
       <Input
         label="Número de tarjeta"
@@ -83,12 +76,22 @@ const PaymentForm = ({
 
       <Input
         label="Nombre del titular"
-        name="placeHolder"
-        value={formData.placeHolder}
+        name="cardHolderName"
+        value={formData.cardHolderName}
         onChange={handleChange}
         required
       />
-
+      <div className="form-row">
+        <label>Tipo de Pago</label>
+        <select name="type" value={formData.type} onChange={handleChange}>
+          <option value="credit_card">Tarjeta de Credito</option>
+          <option value="debit_card">Tarjeta de Debito</option>
+          <option value="paypal">Paypal</option>
+          <option value="bank_transfer">Transferencia Bancaria</option>
+          <option value="cash_on_delivery">Pagar al entregar</option>
+        </select>
+      </div>
+      
       <div className="form-row">
         <Input
           label="Fecha de expiración"

@@ -73,7 +73,7 @@ const createAddress = async (req, res, next) => {
 
 const updateAddress = async (req, res, next) => {
   try {
-    const { addressId } = req.params;
+    const { id } = req.params;
     const {
       name,
       address,
@@ -85,16 +85,16 @@ const updateAddress = async (req, res, next) => {
       isDefault,
       addressType,
     } = req.body;
-    const user = req.user.userId;
+    const userId = req.user.userId;
 
-    const shipAddress = await Address.findOne({ _id: addressId, user: userId });
+    const shipAddress = await Address.findOne({ _id: id, user: userId });
     if (!shipAddress) {
       return res.status(404).json({ message: "Address not found" });
     }
 
     if (isDefault && !shipAddress.isDefault) {
       await Address.updateMany(
-        { user: userId, _id: { $ne: addressId } },
+        { user: userId, _id: { $ne: id } },
         { isDefault: false },
       );
     }
@@ -120,11 +120,11 @@ const updateAddress = async (req, res, next) => {
 
 const deleteAddress = async (req, res, next) => {
   try {
-    const { addressId } = req.params;
+    const { id } = req.params;
     const userId = req.user.userId;
 
     const shipAddress = await Address.findOne({
-      _id: addressId,
+      _id: id,
       user: userId,
     });
 
@@ -132,7 +132,7 @@ const deleteAddress = async (req, res, next) => {
       return res.status(404).json({ message: "Address not found" });
     }
 
-    await Address.findByIdAndDelete(addressId);
+    await Address.findByIdAndDelete(id);
 
     res.status(200).json({
       message: "Address deleted successfully",
