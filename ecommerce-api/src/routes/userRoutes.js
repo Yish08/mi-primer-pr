@@ -9,6 +9,7 @@ import {
 } from "../controllers/userController.js";
 import validate from "../middlewares/validation.js";
 import isAdmin from "../middlewares/isAdminMiddleware.js";
+import isSelfOrAdmin from "../middlewares/isSelfOrAdminMiddleware.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
@@ -32,7 +33,12 @@ const createUserValidation = [
 ];
 
 const updateUserValidation = [
+  body("name").optional().notEmpty().withMessage("Name cannot be empty"),
   body("email").optional().isEmail().withMessage("A valid email is required"),
+  body("phone")
+    .optional({ values: "falsy" })
+    .matches(/^\d{10}$/)
+    .withMessage("Phone must be 10 digits"),
   body("role")
     .optional()
     .isIn(["customer", "admin"])
@@ -44,7 +50,7 @@ router.get("/users", authMiddleware, isAdmin, getUsers);
 router.get(
   "/users/:id",
   authMiddleware,
-  isAdmin,
+  isSelfOrAdmin,
   userIdValidation,
   validate,
   getUserById,
@@ -62,7 +68,7 @@ router.post(
 router.put(
   "/users/:id",
   authMiddleware,
-  isAdmin,
+  isSelfOrAdmin,
   [...userIdValidation, ...updateUserValidation],
   validate,
   updateUser,

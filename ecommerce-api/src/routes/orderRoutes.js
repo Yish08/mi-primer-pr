@@ -2,6 +2,7 @@ import express from "express";
 import { body, param } from "express-validator";
 import {
   getOrders,
+  getMyOrders,
   getOrderById,
   createOrder,
   updateOrderStatus,
@@ -75,6 +76,8 @@ const updateOrderStatusValidation = [
 ];
 
 router.get("/orders", authMiddleware, isAdmin, getOrders);
+
+router.get("/orders/my-orders", authMiddleware, getMyOrders);
 
 router.get(
   "/orders/:id",

@@ -3,8 +3,67 @@ import { Link } from "react-router-dom";
 import Button from "../components/common/Button";
 import Icon from "../components/common/Icon/Icon";
 import Loading from "../components/common/Loading/Loading";
-import { STORAGE_KEYS, readLocalJSON } from "../utils/storageHelpers";
+import ErrorMessage from "../components/common/ErrorMessage/ErrorMessage";
+import { getMyOrders } from "../services/orderService";
 import "./Orders.css";
+
+const STATUS_LABELS = {
+  pending: "Pendiente",
+  processing: "En proceso",
+  shipped: "Enviado",
+  delivered: "Entregado",
+  cancelled: "Cancelado",
+};
+
+const PAYMENT_TYPE_LABELS = {
+  credit_card: "Tarjeta de crédito",
+  debit_card: "Tarjeta de débito",
+  paypal: "PayPal",
+  bank_transfer: "Transferencia bancaria",
+  cash_on_delivery: "Pago contra entrega",
+};
+
+// Adapta la orden del backend a la forma que usa esta página
+const normalizeOrder = (order) => {
+  const items = (order.products || []).map((item) => ({
+    id: item.productId?._id || item._id,
+    name: item.productId?.name,
+    price: item.price,
+    quantity: item.quantity,
+  }));
+  const subtotal = items.reduce(
+    (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
+    0
+  );
+  const shipping = order.shippingCost || 0;
+  const total = order.totalPrice || 0;
+
+  return {
+    id: order._id,
+    shortId: order._id?.slice(-6).toUpperCase(),
+    date: order.createdAt,
+    statusToken: order.status || "pending",
+    status: STATUS_LABELS[order.status] || order.status,
+    items,
+    subtotal,
+    tax: Math.max(total - subtotal - shipping, 0),
+    shipping,
+    total,
+    shippingAddress: order.address && {
+      name: order.address.name,
+      address1: order.address.address,
+      city: order.address.city,
+      postalCode: order.address.postalCode,
+      country: order.address.country,
+    },
+    paymentMethod: order.paymentMethod && {
+      alias:
+        PAYMENT_TYPE_LABELS[order.paymentMethod.type] ||
+        order.paymentMethod.type,
+      cardNumber: order.paymentMethod.cardNumber,
+    },
+  };
+};
 
 const formatMoney = (value = 0) =>
   new Intl.NumberFormat("es-MX", {
@@ -29,21 +88,34 @@ export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const loadOrders = () => {
-      const storedOrders = readLocalJSON(STORAGE_KEYS.orders) || [];
-      const sortedOrders = [...storedOrders].sort(
-        (a, b) => new Date(b.date) - new Date(a.date)
-      );
-      setOrders(sortedOrders);
-      setSelectedOrderId((current) => current ?? sortedOrders[0]?.id ?? null);
-      setLoading(false);
+    let ignore = false;
+
+    const loadOrders = async () => {
+      try {
+        const data = await getMyOrders();
+        if (ignore) return;
+        const sortedOrders = data
+          .map(normalizeOrder)
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
+        setOrders(sortedOrders);
+        setSelectedOrderId((current) => current ?? sortedOrders[0]?.id ?? null);
+      } catch (err) {
+        if (ignore) return;
+        setError(
+          err.response?.data?.message || "No se pudieron cargar tus pedidos"
+        );
+      } finally {
+        if (!ignore) setLoading(false);
+      }
     };
 
     loadOrders();
-    window.addEventListener("storage", loadOrders);
-    return () => window.removeEventListener("storage", loadOrders);
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const selectedOrder = useMemo(
@@ -51,15 +123,21 @@ export default function Orders() {
     [orders, selectedOrderId]
   );
 
-  const detailStatusToken = selectedOrder
-    ? (selectedOrder.status || "confirmed").toLowerCase()
-    : "confirmed";
-  const detailStatusLabel = selectedOrder?.status || "Confirmado";
+  const detailStatusToken = selectedOrder?.statusToken || "pending";
+  const detailStatusLabel = selectedOrder?.status || "Pendiente";
 
   if (loading) {
     return (
       <div className="orders-page">
-        <Loading message="Cargando pedidos guardados..." />
+        <Loading message="Cargando pedidos..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="orders-page">
+        <ErrorMessage message={error} />
       </div>
     );
   }
@@ -68,10 +146,10 @@ export default function Orders() {
     return (
       <div className="orders-page orders-empty">
         <Icon name="package" size={48} />
-        <h1>No tienes pedidos guardados</h1>
+        <h1>Aún no tienes pedidos</h1>
         <p>
-          Cada vez que confirmes una compra en el checkout, la orden se guarda
-          en tu navegador para consultarla más tarde.
+          Cada vez que confirmes una compra en el checkout, la orden aparecerá
+          aquí para que puedas consultarla más tarde.
         </p>
         <Link to="/" className="orders-link">
           <Button>Descubrir productos</Button>
@@ -88,8 +166,8 @@ export default function Orders() {
           <h1>Mis pedidos</h1>
           <p className="muted">
             {orders.length === 1
-              ? "Tienes 1 pedido guardado en este dispositivo"
-              : `Tienes ${orders.length} pedidos guardados en este dispositivo`}
+              ? "Tienes 1 pedido"
+              : `Tienes ${orders.length} pedidos`}
           </p>
         </div>
         <Button
@@ -109,7 +187,7 @@ export default function Orders() {
           <div className="orders-list-body">
             {orders.map((order) => {
               const itemCount = order.items?.length || 0;
-              const statusToken = (order.status || "confirmed").toLowerCase();
+              const statusToken = order.statusToken;
               const isActive = selectedOrderId === order.id;
               return (
                 <button
@@ -118,11 +196,11 @@ export default function Orders() {
                   onClick={() => setSelectedOrderId(order.id)}
                 >
                   <div className="order-card-head">
-                    <span className="order-id">#{order.id}</span>
+                    <span className="order-id">#{order.shortId}</span>
                     <span
                       className={`order-status order-status-${statusToken}`}
                     >
-                      {order.status || "Confirmado"}
+                      {order.status}
                     </span>
                   </div>
                   <p className="order-date">{formatDate(order.date)}</p>
@@ -141,7 +219,7 @@ export default function Orders() {
             <>
               <div className="order-detail-header">
                 <div>
-                  <p className="eyebrow">Pedido #{selectedOrder.id}</p>
+                  <p className="eyebrow">Pedido #{selectedOrder.shortId}</p>
                   <h2>{formatMoney(selectedOrder.total || 0)}</h2>
                   <p className="muted">{formatDate(selectedOrder.date)}</p>
                 </div>

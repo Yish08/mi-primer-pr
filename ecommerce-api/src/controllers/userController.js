@@ -49,13 +49,31 @@ const createUser = async (req, res, next) => {
 const updateUser = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, email, role } = req.body;
-    const hashPassword = await generatePassword(password);
-    const updatedUser = await User.findByIdAndUpdate(
-      id,
-      { name, email, password: hashPassword, role },
-      { new: true },
-    ).select("-password");
+    const { name, email, phone, role } = req.body;
+
+    if (email) {
+      const emailInUse = await User.findOne({
+        email: email.trim().toLowerCase(),
+        _id: { $ne: id },
+      });
+      if (emailInUse) {
+        return res.status(400).json({ message: "Email already in use" });
+      }
+    }
+
+    // Solo un admin puede cambiar roles; la contraseña no se cambia aquí
+    const updates = { name, email, phone };
+    if (req.user.role === "admin") {
+      updates.role = role;
+    }
+    Object.keys(updates).forEach(
+      (key) => updates[key] === undefined && delete updates[key],
+    );
+
+    const updatedUser = await User.findByIdAndUpdate(id, updates, {
+      new: true,
+      runValidators: true,
+    }).select("-password");
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
     }

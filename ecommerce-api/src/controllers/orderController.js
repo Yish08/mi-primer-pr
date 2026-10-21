@@ -13,6 +13,20 @@ const getOrders = async (req, res, next) => {
   }
 };
 
+const getMyOrders = async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+    const orders = await Order.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .populate("products.productId")
+      .populate("address")
+      .populate("paymentMethod", "type cardHolderName cardNumber");
+    res.json(orders);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getOrderById = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -46,7 +60,7 @@ const createOrder = async (req, res, next) => {
       shippingCost,
     });
 
-    await newOrder.populate("user");
+    await newOrder.populate("user", "name email");
     await newOrder.populate("products.productId");
     await newOrder.populate("address");
     await newOrder.populate("paymentMethod");
@@ -78,4 +92,4 @@ const updateOrderStatus = async (req, res, next) => {
   }
 };
 
-export { getOrders, getOrderById, createOrder, updateOrderStatus };
+export { getOrders, getMyOrders, getOrderById, createOrder, updateOrderStatus };
