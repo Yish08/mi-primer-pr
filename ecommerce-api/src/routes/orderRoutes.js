@@ -98,6 +98,7 @@ router.post(
 router.put(
   "/orders/:id",
   authMiddleware,
+  isAdmin,
   updateOrderStatusValidation,
   validate,
   updateOrderStatus,

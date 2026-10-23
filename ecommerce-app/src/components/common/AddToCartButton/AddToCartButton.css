@@ -1,0 +1,53 @@
+.add-to-cart-icon {
+  display: inline-flex;
+}
+
+/* Mientras el carrito va en camino: el icono se mece y no parece deshabilitado */
+.add-to-cart-btn.is-adding:disabled {
+  opacity: 1;
+  cursor: progress;
+}
+
+.add-to-cart-btn.is-adding .add-to-cart-icon {
+  animation: add-to-cart-rock 0.5s ease-in-out infinite alternate;
+}
+
+/* Confirmacion: verde con una palomita que "salta" */
+.add-to-cart-btn.is-added,
+.add-to-cart-btn.is-added:disabled,
+.add-to-cart-btn.is-added:hover:not(:disabled) {
+  background: var(--color-green);
+  color: var(--color-darker);
+  opacity: 1;
+}
+
+.add-to-cart-btn.is-added .add-to-cart-icon {
+  animation: add-to-cart-pop 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.4);
+}
+
+@keyframes add-to-cart-rock {
+  from {
+    transform: translateX(-2px) rotate(-6deg);
+  }
+  to {
+    transform: translateX(2px) rotate(6deg);
+  }
+}
+
+@keyframes add-to-cart-pop {
+  0% {
+    transform: scale(0) rotate(-45deg);
+  }
+  70% {
+    transform: scale(1.3) rotate(0deg);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .add-to-cart-btn .add-to-cart-icon {
+    animation: none !important;
+  }
+}

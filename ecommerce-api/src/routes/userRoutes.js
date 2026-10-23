@@ -76,10 +76,10 @@ router.put(
 
 router.delete(
   "/users/:id",
-  userIdValidation,
-  validate,
   authMiddleware,
   isAdmin,
+  userIdValidation,
+  validate,
   deleteUser,
 );
 

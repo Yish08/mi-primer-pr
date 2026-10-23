@@ -1,4 +1,4 @@
-import PropTypes from "prop-types";
+import "./Icon.css";
 
 const Icon = ({ name, size = 20, className = "" }) => {
   const icons = {
@@ -800,17 +800,6 @@ const Icon = ({ name, size = 20, className = "" }) => {
   return (
     <span className={`icon ${className}`}>{icons[name] || icons.user}</span>
   );
-};
-
-Icon.propTypes = {
-  name: PropTypes.string.isRequired,
-  size: PropTypes.number,
-  className: PropTypes.string,
-};
-
-Icon.defaultProps = {
-  size: 20,
-  className: "",
 };
 
 export default Icon;

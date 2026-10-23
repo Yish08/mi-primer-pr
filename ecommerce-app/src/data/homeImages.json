@@ -4,7 +4,7 @@
     "subtitle": "Descubre nuevas tendencias en moda",
     "image": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=600&fit=crop",
     "buttonText": "Ver colección",
-    "buttonLink": "/collections/summer",
+    "buttonLink": "/search",
     "backgroundColor": "#26336c"
   },
   {
@@ -12,7 +12,7 @@
     "subtitle": "Hasta 50% de descuento en productos seleccionados",
     "image": "https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=1200&h=600&fit=crop",
     "buttonText": "Ver Ofertas",
-    "buttonLink": "/offers",
+    "buttonLink": "/search",
     "backgroundColor": "#8677b5"
   },
   {
@@ -20,7 +20,7 @@
     "subtitle": "Los últimos gadgets y dispositivos electrónicos",
     "image": "https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=1200&h=600&fit=crop",
     "buttonText": "Explorar",
-    "buttonLink": "/tech",
+    "buttonLink": "/search",
     "backgroundColor": "#3eb7ea"
   },
   {
@@ -28,7 +28,7 @@
     "subtitle": "En compras superiores a $50",
     "image": "https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=1200&h=600&fit=crop",
     "buttonText": "Comprar Ahora",
-    "buttonLink": "/free-shipping",
+    "buttonLink": "/search",
     "backgroundColor": "#79bf87"
   }
 ]

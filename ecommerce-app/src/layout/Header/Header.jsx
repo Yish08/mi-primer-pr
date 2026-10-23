@@ -17,7 +17,7 @@ export default function Header() {
   const totalItems = getTotalItems();
   const navigate = useNavigate();
 
-  // Simular estado de autenticación - reemplazar con tu lógica real
+  // Estado de autenticación; se sincroniza con localStorage via el evento "storage"
   const [isAuth, setIsAuth] = useState(isAuthenticated());
   const [user, setUser] = useState(getCurrentUser());
 
@@ -36,7 +36,7 @@ export default function Header() {
     updateAuthState();
 
     return () => {
-      window.addEventListener("storage", updateAuthState);
+      window.removeEventListener("storage", updateAuthState);
     };
   }, []);
 
@@ -110,7 +110,7 @@ export default function Header() {
   };
 
   const handleRegister = () => {
-    console.log("Redirigir a registro");
+    navigate("/register");
     setIsUserMenuOpen(false);
     setIsMobileMenuOpen(false);
   };
@@ -337,6 +337,12 @@ export default function Header() {
                             <Icon name="settings" size={16} />
                             Configuración
                           </Link>
+                          {user?.role === "admin" && (
+                            <Link to="/admin/products" className="user-link">
+                              <Icon name="package" size={16} />
+                              Panel Admin
+                            </Link>
+                          )}
                         </div>
 
                         <div className="logout-section">
@@ -356,6 +362,7 @@ export default function Header() {
                 to="/cart"
                 className="cart-btn"
                 aria-label="Ver carrito de compras"
+                data-cart-target
               >
                 <Icon name="shoppingCart" size={24} />
                 <span className="cart-badge">{totalItems}</span>
@@ -495,6 +502,16 @@ export default function Header() {
                     <Icon name="settings" size={20} />
                     Configuración
                   </Link>
+                  {user?.role === "admin" && (
+                    <Link
+                      to="/admin/products"
+                      className="mobile-nav-link"
+                      onClick={handleMobileMenuClose}
+                    >
+                      <Icon name="package" size={20} />
+                      Panel Admin
+                    </Link>
+                  )}
                 </nav>
               )}
 
@@ -506,7 +523,7 @@ export default function Header() {
                   <span>{isDarkMode ? "Modo Claro" : "Modo Oscuro"}</span>
                 </button>
                 <Link
-                  to="/help"
+                  to="/"
                   className="mobile-nav-link"
                   onClick={handleMobileMenuClose}
                 >
@@ -514,7 +531,7 @@ export default function Header() {
                   Centro de Ayuda
                 </Link>
                 <Link
-                  to="/contact"
+                  to="/"
                   className="mobile-nav-link"
                   onClick={handleMobileMenuClose}
                 >

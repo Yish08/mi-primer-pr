@@ -75,37 +75,27 @@ Debe devolver los 9 productos del seed, con `imagesUrl` como array:
 
 ---
 
-## 2. Arquitectura de servicios — LEER ANTES DE TOCAR NADA
+## 2. Arquitectura de servicios
 
-En `ecommerce-app/src/services/` conviven **a proposito** dos servicios de productos.
-No son un duplicado por error y **no deben fusionarse ni borrarse**:
+Desde el **2026-10-20** todo el frontend consume la **API real** via `apiClient`.
+Los mocks (`productService.js`, `categoryService.js`, `userService.js` y los JSON de
+`src/data/`) se eliminaron; solo queda `src/data/homeImages.json`, que alimenta el banner.
 
-| Servicio | Fuente | Consumidores |
-|---|---|---|
-| `productService.js` (singular) | mockup `src/data/products.json` | ProductDetails, SearchResultsList, Home (import presente, sin uso) |
-| `productsService.js` (plural) | **API real** via `apiClient` | Home |
+| Servicio | Endpoints |
+|---|---|
+| `productsService.js` | `GET /products`, `GET /products/:id`, `GET /products/search?q=` |
+| `categoriesService.js` | `GET /categories`, `GET /categories/:id`, `GET /products/search?category=` |
+| `usersService.js` | `GET/PUT /users/:id` |
+| `authService.js` | `POST /auth/login`, `POST /auth/register` (el refresh vive en `apiClient`) |
+| `cartService.js` | `GET /cart/user/:id`, `PUT /cart/:id` |
+| `paymentService.js` | `/payment-methods` (CRUD) |
+| `shippingService.js` | `/addresses` (CRUD) |
+| `orderService.js` | `POST /orders`, `GET /orders/my-orders` |
 
-La convivencia mock/API es deliberada para el curso: permite comparar o intercambiar
-la fuente de datos en clase. Los nombres solo difieren en una "s", asi que es facil
-confundirlos con un error.
-
-Los demas servicios siguen en mockup y **no fueron migrados**:
-
-| Servicio | Estado | Existe endpoint en la API? |
-|---|---|---|
-| `categoryService.js` | mock | Si — `GET /api/categories` |
-| `userService.js` | mock | Si — `/api/users`, `/api/auth` |
-| `paymentService.js` | mock | Si — `/api/payment-methods` |
-| `shippingService.js` | mock | **No** — falta `addressRoutes.js` |
-
-Migrarlos es candidato natural a ejercicio de clase (ver seccion 5).
-
-### Forma de datos compartida
+### Forma de datos
 
 El campo de imagenes de producto es `imagesUrl` (array de strings tipo
-`/img/products/...`) **tanto en el mock como en la API**. Eso es lo que permite
-intercambiar fuentes sin tocar componentes. Si se agregan campos a `Product`, hay que
-reflejarlos con el mismo nombre en `src/data/products.json` y en el modelo Mongoose.
+`/img/products/...`) en el modelo Mongoose `Product`.
 
 > Ojo: el modelo `Category` si usa `imageURL` (singular, string). Es otro campo,
 > no es una inconsistencia.
@@ -158,49 +148,25 @@ Todo lo siguiente se ejecuto realmente, no es inferencia:
 
 ---
 
-## 5. Lo que NO se corrigio (candidatos a ejercicio de clase)
+## 5. Pendientes abiertos
 
-Ninguno rompe el arranque. Se dejaron a proposito porque son decisiones de diseño del
-profesor, no bugs.
+Lo de la version anterior de esta seccion (rutas de direcciones, auth real con JWT,
+`parentCategory` poblado, componentes leyendo JSON directo, el typo de `Setttings.jsx`
+y los warnings de ESLint) ya quedo resuelto en la limpieza del 2026-10-20.
 
-### Estructurales
+Funcionalidades por construir (no son codigo muerto):
 
-1. **No existe `addressRoutes.js`.** El `addressController.js` esta completo
-   (`getUserAddresses`, `getAddressById`, `createAddress`, `updateAddress`,
-   `deleteAddress`) pero ninguna ruta lo expone. Es un hueco real: el modelo `Order`
-   declara `address` como **required**, asi que no se pueden crear ordenes de punta a
-   punta. Cablear estas rutas es un ejercicio natural.
+1. `pages/Settings.jsx` — placeholder ruteado en `/settings`.
+2. Newsletter — el submit solo hace `console.log`, no hay endpoint.
+3. Links de `Navigation` (Ofertas, Novedades, Mas vendidos, Flash sale) y botones del
+   banner apuntan a `/search` como placeholder; Footer usa `to="#"`.
 
-2. **Auth del frontend es falsa.** `src/utils/auth.js` valida contra un objeto
-   hardcodeado (`admin@email.com` / `admin123`) y genera el "token" con `btoa()`.
-   El backend ya tiene `/api/auth` con bcrypt y JWT funcionando, pero el front lo
-   ignora por completo. Migrar esto es probablemente la practica mas jugosa.
+Detalles conocidos:
 
-3. **Diferencia de forma en `category.parentCategory`.**
-   - Mock: objeto anidado completo
-   - API: string (ObjectId sin populate)
-
-   `Navigation.jsx:16` hace `cat.parentCategory._id`. Funciona hoy porque
-   `Navigation` lee `categories.json` directo, pero **rompera al migrar categorias a
-   la API**. Se resuelve con un `.populate("parentCategory")` en `categoryController`
-   o normalizando en el servicio del front.
-
-4. **Componentes que saltan la capa de servicios** e importan el mock directo:
-   `layout/Navigation/Navigation.jsx:4` y
-   `components/ProductDetails/ProductDetails.jsx:4` importan `categories.json`.
-
-### Cosmeticos
-
-5. `src/pages/Setttings.jsx` — typo, tres "t". Se dejo sin renombrar para no mover
-   archivos del front sin autorizacion; el import en `App.jsx` lo referencia asi.
-
-6. **4 warnings de ESLint** en el build (ninguno es error):
-   - `SearchResultsList.jsx:61` — `handleQueryChange` definido y nunca usado
-     (el input de busqueda al parecer quedo sin cablear)
-   - `CartContext.jsx:18` — `total` asignado y nunca usado
-   - `Checkout.jsx:61` — `useEffect` con dependencia faltante `isOrderFinished`
-   - `Home.jsx:7` — `fetchProducts` importado y nunca usado. **Este es intencional**:
-     es el import del mock que convive con el de la API (ver seccion 2)
+4. Si `postalCode`/`phone` exceden el largo del modelo, la API responde 500 (error de
+   Mongoose) en vez de 422; falta validarlos en `addressRoutes.js`.
+5. Tarjetas creadas antes del 2026-10-20 pueden tener `cvv` guardado en la BD; el modelo
+   ya no lo persiste. Limpieza: `db.paymentmethods.updateMany({}, { $unset: { cvv: 1 } })`.
 
 ---
 
@@ -210,15 +176,17 @@ Base: `http://localhost:4000/api`
 
 | Recurso | Rutas | Notas |
 |---|---|---|
-| auth | `/auth/...` | bcrypt + JWT, funcional, sin usar por el front |
+| auth | `/auth/register`, `/auth/login`, `/auth/refresh` | bcrypt + JWT; expiraciones via `JWT_EXPIRES_IN` / `JWT_REFRESH_EXPIRES_IN` |
 | products | `GET /products`, `GET /products/search`, `GET /products/:id`, `POST/PUT/DELETE /products` | Escrituras piden `authMiddleware` + `isAdmin` |
 | categories | `GET /categories`, `GET /categories/:id`, `POST/PUT/DELETE` | Idem |
-| cart | `/carts/...` | |
-| orders | `/orders/...` | Requiere `address`, que no tiene rutas |
-| payment methods | `/payment-methods/...` | |
+| cart | `/cart/...` | Solo el dueño o admin; `/cart/add` toma el usuario del token |
+| orders | `/orders/...` | `GET /:id` dueño o admin; `PUT /:id` (estado) solo admin |
+| payment methods | `/payment-methods/...` | Cada usuario ve/edita solo las suyas; no se guarda CVV |
 | users | `/users/...` | |
-| wishlist | `/wishlists/...` | |
-| **addresses** | — | **Controller existe, rutas NO** |
+| wishlist | `GET/POST /wishlist`, `DELETE /wishlist/products/:productId`, `GET /wishlist/all` (admin) | Usuario sacado del token; responde `{ products }`. Front: `wishlistService` + `WishlistContext` (corazon en `ProductCard`, pagina `/wishlist`) |
+| addresses | `/addresses/...` | Siempre filtradas por el usuario del token |
+
+Los `populate("user")` devuelven solo `name email` (nunca el hash de la contraseña).
 
 `GET /products/search` responde `{ products, pagination }` (limit default 10),
 distinto de `GET /products` que responde un array plano. Conviene tenerlo presente

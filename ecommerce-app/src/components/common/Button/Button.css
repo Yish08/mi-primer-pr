@@ -60,6 +60,26 @@
   background: #c82333;
 }
 
+.btn-ghost {
+  background: transparent;
+  color: var(--text);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(var(--accent-rgb), 0.08);
+}
+
+.btn-text {
+  background: transparent;
+  color: var(--accent);
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.btn-text:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
 /* Button Sizes */
 .btn-sm {
   padding: 8px 16px;

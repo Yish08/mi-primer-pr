@@ -25,20 +25,11 @@
   letter-spacing: -0.4px;
 }
 
-.category-products-h2 {
-  font-size: clamp(18px, 2vw, 24px);
-  font-weight: 500;
-  margin: 0 0 var(--gap);
-  color: var(--text);
-}
-
 .category-products-muted {
   color: var(--muted);
   margin: calc(var(--gap) * 0.5) 0;
   font-size: 0.95rem;
 }
-
-
 
 .category-products-grid {
   display: grid;
@@ -54,10 +45,6 @@
 
   .category-products-header {
     margin-bottom: var(--gap);
-  }
-
-  .category-subcategories-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
 
   .category-products-grid {

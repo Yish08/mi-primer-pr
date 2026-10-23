@@ -1,4 +1,3 @@
-import React from "react";
 import "./Button.css";
 
 export default function Button({
@@ -9,6 +8,7 @@ export default function Button({
   variant = "primary",
   size = "base",
   className = "",
+  ...rest
 }) {
   const buttonClasses = [
     "btn",
@@ -25,6 +25,7 @@ export default function Button({
       className={buttonClasses}
       onClick={onClick}
       disabled={disabled}
+      {...rest}
     >
       {children}
     </button>

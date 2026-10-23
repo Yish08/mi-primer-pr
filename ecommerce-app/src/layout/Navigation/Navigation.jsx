@@ -49,7 +49,7 @@ const Navigation = ({ isMobile = false, onLinkClick }) => {
       <div className="mobile-navigation">
         {/* Ofertas especiales */}
         <Link
-          to="/offers"
+          to="/search"
           className="mobile-nav-link special"
           onClick={onLinkClick}
         >
@@ -57,7 +57,7 @@ const Navigation = ({ isMobile = false, onLinkClick }) => {
           Ofertas del día
         </Link>
         <Link
-          to="/new"
+          to="/search"
           className="mobile-nav-link special"
           onClick={onLinkClick}
         >
@@ -65,7 +65,7 @@ const Navigation = ({ isMobile = false, onLinkClick }) => {
           Novedades
         </Link>
         <Link
-          to="/bestsellers"
+          to="/search"
           className="mobile-nav-link special"
           onClick={onLinkClick}
         >
@@ -73,7 +73,7 @@ const Navigation = ({ isMobile = false, onLinkClick }) => {
           Más vendidos
         </Link>
         <Link
-          to="/flash-sale"
+          to="/search"
           className="mobile-nav-link special"
           onClick={onLinkClick}
         >
@@ -151,16 +151,16 @@ const Navigation = ({ isMobile = false, onLinkClick }) => {
 
           {/* Navegación horizontal */}
           <nav className="categories-nav">
-            <Link to="/offers" className="nav-link special">
+            <Link to="/search" className="nav-link special">
               Ofertas del día
             </Link>
-            <Link to="/new" className="nav-link special">
+            <Link to="/search" className="nav-link special">
               Novedades
             </Link>
-            <Link to="/bestsellers" className="nav-link special">
+            <Link to="/search" className="nav-link special">
               Más vendidos
             </Link>
-            <Link to="/flash-sale" className="nav-link special">
+            <Link to="/search" className="nav-link special">
               Flash sale
             </Link>
           </nav>

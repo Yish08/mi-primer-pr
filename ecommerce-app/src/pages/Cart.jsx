@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import CartView from "../components/Cart/CartView";
+import StockNotice from "../components/Cart/StockNotice";
 import Button from "../components/common/Button";
 import Icon from "../components/common/Icon/Icon";
 import { useCart } from "../context/CartContext";
@@ -13,6 +14,8 @@ export default function Cart() {
   if (cartItems.length === 0) {
     return (
       <div className="cart-empty">
+        {/* Si el carrito quedo vacio porque se agotaron sus productos, se avisa */}
+        <StockNotice />
         <Icon name="cart" size={100}></Icon>
         <h2>Tu carrito está vacío</h2>
         <p>Agrega algunos productos para empezar a comprar</p>

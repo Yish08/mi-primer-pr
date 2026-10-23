@@ -86,7 +86,11 @@ const getProducts = async (req, res, next) => {
 const getProductById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const product = await Product.findById(id).populate("category");
+    // Populate anidado para que el breadcrumb muestre la jerarquia completa
+    const product = await Product.findById(id).populate({
+      path: "category",
+      populate: { path: "parentCategory" },
+    });
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }

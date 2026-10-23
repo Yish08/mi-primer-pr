@@ -12,6 +12,7 @@ import {
 import validate from "../middlewares/validation.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 import isAdmin from "../middlewares/isAdminMiddleware.js";
+import isSelfOrAdmin from "../middlewares/isSelfOrAdminMiddleware.js";
 
 const router = express.Router();
 
@@ -85,6 +86,7 @@ router.get(
 router.get(
   "/cart/user/:id",
   authMiddleware,
+  isSelfOrAdmin,
   userIdValidation,
   validate,
   getCartByUser,

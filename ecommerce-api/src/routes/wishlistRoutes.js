@@ -1,14 +1,16 @@
 import express from "express";
 import { body, param } from "express-validator";
 import {
-  getWishlists,
-  getWishlistByUser,
+  getMyWishlist,
   addProductToWishlist,
   removeProductFromWishlist,
+  getWishlists,
+  getWishlistByUser,
   deleteWishlist,
 } from "../controllers/wishlistController.js";
 import validate from "../middlewares/validation.js";
 import isAdmin from "../middlewares/isAdminMiddleware.js";
+import isSelfOrAdmin from "../middlewares/isSelfOrAdminMiddleware.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
@@ -26,32 +28,19 @@ const userIdValidation = [
 ];
 
 const addProductValidation = [
-  body("userId")
-    .isMongoId()
-    .withMessage("User ID must be a valid MongoDB ObjectId"),
   body("productId")
     .isMongoId()
     .withMessage("Product ID must be a valid MongoDB ObjectId"),
 ];
 
 const removeProductValidation = [
-  param("id")
-    .isMongoId()
-    .withMessage("Wishlist ID must be a valid MongoDB ObjectId"),
-  body("productId")
+  param("productId")
     .isMongoId()
     .withMessage("Product ID must be a valid MongoDB ObjectId"),
 ];
 
-router.get("/wishlist", authMiddleware, isAdmin, getWishlists);
-
-router.get(
-  "/wishlist/user/:id",
-  authMiddleware,
-  userIdValidation,
-  validate,
-  getWishlistByUser,
-);
+// --- Usuario logueado (el usuario sale del token) ---
+router.get("/wishlist", authMiddleware, getMyWishlist);
 
 router.post(
   "/wishlist",
@@ -62,11 +51,23 @@ router.post(
 );
 
 router.delete(
-  "/wishlist/:id/product",
+  "/wishlist/products/:productId",
   authMiddleware,
   removeProductValidation,
   validate,
   removeProductFromWishlist,
+);
+
+// --- Admin / gestion ---
+router.get("/wishlist/all", authMiddleware, isAdmin, getWishlists);
+
+router.get(
+  "/wishlist/user/:id",
+  authMiddleware,
+  isSelfOrAdmin,
+  userIdValidation,
+  validate,
+  getWishlistByUser,
 );
 
 router.delete(

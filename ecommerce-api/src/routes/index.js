@@ -8,6 +8,7 @@ import productRoutes from "./productRoutes.js";
 import userRoutes from "./userRoutes.js";
 import wishlistRoutes from "./wishlistRoutes.js";
 import addressRoutes from "./addressRoutes.js";
+import uploadRoutes from "./uploadRoutes.js";
 
 const router = express.Router();
 
@@ -20,5 +21,6 @@ router.use(productRoutes);
 router.use(userRoutes);
 router.use(wishlistRoutes);
 router.use(addressRoutes);
+router.use(uploadRoutes);
 
 export default router;

@@ -4,16 +4,14 @@ import User from "../models/User.js";
 import Cart from "../models/Cart.js";
 const generateToken = (userId, name, role) => {
   return jwt.sign({ userId, name, role }, process.env.JWT_SECRET, {
-    expiresIn: "1h",
+    expiresIn: process.env.JWT_EXPIRES_IN || "1h",
   });
 };
 
 const generateRefreshToken = (userId) => {
-  const refreshToken = jwt.sign({ userId }, process.env.JWT_REFRESH_TOKEN, {
-    expiresIn: "7d",
+  return jwt.sign({ userId }, process.env.JWT_REFRESH_TOKEN, {
+    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
   });
-
-  return { token: refreshToken, userId };
 };
 
 const generatePassword = async (password) => {
@@ -74,14 +72,14 @@ const login = async (req, res, next) => {
     const token = generateToken(userExist._id, userExist.name, userExist.role);
     const refreshToken = generateRefreshToken(userExist._id);
 
-    res.status(200).json({ token, refreshToken: refreshToken.token });
+    res.status(200).json({ token, refreshToken });
   } catch (error) {
     next(error);
   }
 };
 
 //Funcion nueva para generar un nuevo token con el refresh 
-const refresh = async (req, res, next) => {
+const refresh = async (req, res) => {
   try {
     const { refreshToken } = req.body;
     

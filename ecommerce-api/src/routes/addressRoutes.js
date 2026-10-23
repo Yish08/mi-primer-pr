@@ -36,7 +36,7 @@ const updateAddressValidation = [
 
 router.get("/addresses", authMiddleware, getUserAddresses);
 
-router.get("/addresses/:id", addressIdValidation, validate, authMiddleware, getAddressById);
+router.get("/addresses/:id", authMiddleware, addressIdValidation, validate, getAddressById);
 
 router.post(
   "/addresses",

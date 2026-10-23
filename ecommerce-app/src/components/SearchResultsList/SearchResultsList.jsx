@@ -5,7 +5,7 @@ import List from "../List/List";
 import "./SearchResultsList.css";
 
 export default function SearchResultsList() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -38,20 +38,12 @@ export default function SearchResultsList() {
       let valB = sortBy === "price" ? b.price : b.name.toLowerCase();
       if (valA < valB) return sortOrder === "asc" ? -1 : 1;
       if (valA > valB) return sortOrder === "asc" ? 1 : -1;
+      return 0;
     });
   }, [products, sortBy, sortOrder]);
 
   const hasQuery = query.length > 0;
   const showNoResults = hasQuery && !loading && sortedProducts.length === 0;
-
-  const handleQueryChange = (event) => {
-    const value = event.target.value;
-    if (!value.trim()) {
-      setSearchParams({});
-      return;
-    }
-    setSearchParams({ q: value });
-  };
 
   return (
     <div className="search-results-fullwidth">
@@ -95,8 +87,8 @@ export default function SearchResultsList() {
         <div className="search-results-message">
           <h3>No encontramos coincidencias</h3>
           <p>
-            Prueba con otros términos o recorre nuestras{" "}
-            <Link to="/offers">ofertas destacadas</Link>.
+            Prueba con otros términos o recorre nuestro{" "}
+            <Link to="/">catálogo</Link>.
           </p>
         </div>
       )}

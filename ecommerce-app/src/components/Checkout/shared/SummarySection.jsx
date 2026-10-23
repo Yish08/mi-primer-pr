@@ -27,7 +27,7 @@ const SummarySection = ({
           {!isExpanded && selected && (
             <div className="summary-content">
               {summaryContent}
-              <Button variant="text" size="small" onClick={onToggle}>
+              <Button variant="text" size="sm" onClick={onToggle}>
                 Cambiar
               </Button>
             </div>

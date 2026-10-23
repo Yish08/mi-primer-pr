@@ -2,7 +2,7 @@ import apiClient from "./apiClient";
 
 export async function getPaymentMethods() {
   const response = await apiClient.get("/payment-methods");
-  return response.data.paymentMethods || response.data || [];
+  return response.data || [];
 }
 
 export async function getDefaultPaymentMethod() {

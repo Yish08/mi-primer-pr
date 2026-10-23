@@ -1,0 +1,127 @@
+/* Elementos temporales del efecto "el carrito viene por tu producto"
+   (carryToCart.js). Igual que flyToCart: viven en <body> con position: fixed,
+   por encima del Header y de sus menus, y no capturan clics. */
+.carry-courier,
+.carry-drop {
+  position: fixed;
+  z-index: 1100;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* left/top marcan el centro del carrito */
+.carry-courier {
+  width: 64px;
+  height: 56px;
+  margin: -28px 0 0 -32px;
+}
+
+.carry-courier-body {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.28));
+}
+
+/* El SVG va encima de la carga: la canasta tapa la parte de abajo de la foto */
+.carry-courier svg {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.carry-courier.is-facing-left svg {
+  transform: scaleX(-1);
+}
+
+.carry-courier-basket {
+  fill: var(--color-pink);
+  stroke: var(--text);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.carry-courier-grid {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.75);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.carry-courier-handle {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.carry-courier-wheel {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.carry-courier-wheel circle {
+  fill: var(--surface);
+  stroke: var(--text);
+  stroke-width: 3;
+}
+
+.carry-courier-wheel path {
+  stroke: var(--text);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.carry-courier.is-rolling .carry-courier-wheel {
+  animation: carry-courier-roll 0.35s linear infinite;
+}
+
+@keyframes carry-courier-roll {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Foto del producto dentro de la canasta (aparece al atraparla) */
+.carry-courier-cargo {
+  position: absolute;
+  top: -12px;
+  left: 20px;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--color-white);
+  box-shadow: 0 0 0 2px var(--color-white), 0 2px 6px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+}
+
+.carry-courier.is-facing-left .carry-courier-cargo {
+  left: 10px;
+}
+
+.carry-courier-cargo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Copia de la foto que cae en la canasta. Va detras del carrito: asi "entra"
+   a la canasta en lugar de taparla. */
+.carry-drop {
+  z-index: 1099;
+  overflow: hidden;
+  background: var(--color-white);
+  box-shadow: var(--elev-2);
+}
+
+.carry-drop img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

@@ -23,7 +23,7 @@ const paymentMethodSchema = new mongoose.Schema(
     // Dígitos 2-6: Identifican al emisor de la tarjeta (por ejemplo, el banco o la entidad financiera).
     // Dígitos 7-15: Representan el número de cuenta individual del titular de la tarjeta.
     // Dígito 16: Es un dígito verificador calculado mediante un algoritmo para asegurar la validez de la tarjeta.
-    cardNumber: { type: String, max: 16 },
+    cardNumber: { type: String, maxLength: 19 },
     cardHolderName: {
       type: String,
       trim: true,
@@ -43,13 +43,6 @@ const paymentMethodSchema = new mongoose.Schema(
     isDefault: {
       type: Boolean,
       default: false,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-    cvv: {
-      type: String,
     },
   },
   { timestamps: true },

@@ -29,8 +29,8 @@ const addressSchema = new mongoose.Schema(
     postalCode: {
       type: String,
       required: true,
-      min: 4,
-      max: 6,
+      minLength: 4,
+      maxLength: 6,
       trim: true,
     },
     country: {
@@ -40,7 +40,7 @@ const addressSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      max: 10,
+      maxLength: 10,
       trim: true,
     },
     isDefault: {

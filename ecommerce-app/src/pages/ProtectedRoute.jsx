@@ -12,7 +12,7 @@ export default function ProtectedRoute({
 
   if (allowedRoles) {
     const user = getCurrentUser();
-    if (!allowedRoles.includes(user.role)) {
+    if (!allowedRoles.includes(user?.role)) {
       return (
         <div style={{ textAlign: "center", padding: "48px" }}>
           <h2>Acceso denegado</h2>

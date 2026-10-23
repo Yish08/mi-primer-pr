@@ -24,7 +24,6 @@ export function ThemeProvider({ children }) {
     } catch {}
     if (typeof document !== "undefined") {
       document.documentElement.setAttribute("data-theme", theme);
-      console.log("Tema cambiado a:", theme);
     }
   }, [theme]);
 

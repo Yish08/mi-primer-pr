@@ -4,7 +4,6 @@ import List from "../components/List/List";
 import ErrorMessage from "../components/common/ErrorMessage/ErrorMessage";
 import Loading from "../components/common/Loading/Loading";
 import homeImages from "../data/homeImages.json";
-import { fetchProducts } from "../services/productService";
 import { getAllProducts } from "../services/productsService";
 
 export default function Home() {

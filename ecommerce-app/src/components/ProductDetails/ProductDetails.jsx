@@ -1,16 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../../context/CartContext";  
 import Breadcrumb from "../../layout/Breadcrumb/Breadcrumb";
 import { getProductById } from "../../services/productsService";
+import AddToCartButton from "../common/AddToCartButton/AddToCartButton";
 import Badge from "../common/Badge";
-import Button from "../common/Button";
 import ErrorMessage from "../common/ErrorMessage/ErrorMessage";
 import Loading from "../common/Loading/Loading";
 import "./ProductDetails.css";
 
 export default function ProductDetails({ productId }) {
-  const { addToCart } = useCart();
+  const { getQuantityInCart } = useCart();
+  // La foto que el carrito animado se lleva al Header
+  const imageRef = useRef(null);
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -42,11 +44,6 @@ export default function ProductDetails({ productId }) {
   }, [productId]);
 
   const resolvedCategory = product?.category || null;
-  const categorySlug = resolvedCategory?._id || product?.category?.name || null;
-
-  const handleAddToCart = () => {
-    if (product) addToCart(product, 1);
-  };
 
   if (loading) {
     return (
@@ -72,6 +69,7 @@ export default function ProductDetails({ productId }) {
   const { name, description, price, stock, imagesUrl, category } = product;
   const stockBadge = stock > 0 ? "success" : "error";
   const stockLabel = stock > 0 ? "En stock" : "Agotado";
+  const inCart = getQuantityInCart(product._id);
 
   return (
     <div className="product-details-container">
@@ -79,6 +77,7 @@ export default function ProductDetails({ productId }) {
       <div className="product-details-main">
         <div className="product-details-image">
           <img
+            ref={imageRef}
             src={imagesUrl?.[0] || "/img/products/placeholder.svg"}
             alt={name}
             onError={(event) => {
@@ -99,19 +98,15 @@ export default function ProductDetails({ productId }) {
           <div className="product-details-stock">
             <Badge text={stockLabel} variant={stockBadge} />
             {stock > 0 && (
-              <span className="muted">{stock} unidades disponibles</span>
+              <span className="muted">
+                {stock} {stock === 1 ? "unidad disponible" : "unidades disponibles"}
+                {inCart > 0 && ` · ${inCart} en tu carrito`}
+              </span>
             )}
           </div>
           <div className="product-details-price">${price}</div>
           <div className="product-details-actions">
-            <Button
-              variant="primary"
-              size="lg"
-              disabled={stock === 0}
-              onClick={handleAddToCart}
-            >
-              Agregar al carrito
-            </Button>
+            <AddToCartButton product={product} imageRef={imageRef} size="lg" />
             <Link to="/cart" className="btn btn-outline btn-lg">
               Ver carrito
             </Link>

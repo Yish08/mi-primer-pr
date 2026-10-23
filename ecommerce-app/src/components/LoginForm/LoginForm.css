@@ -23,26 +23,6 @@
   color: var(--muted, #333);
 }
 
-.demo-users {
-  background: var(--surface, #f8fafc);
-  padding: 10px 14px;
-  border-radius: 10px;
-  margin-bottom: 18px;
-  font-size: 0.98em;
-  color: var(--muted, #64748b);
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.12);
-}
-
-.demo-users h4 {
-  margin: 0 0 8px 0;
-  color: var(--accent, #6366f1);
-  font-size: 1em;
-}
-
-.user-demo {
-  margin-bottom: 4px;
-}
-
 .login-form {
   display: flex;
   flex-direction: column;

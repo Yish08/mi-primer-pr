@@ -57,8 +57,8 @@ const updatePaymentValidation = [
     .withMessage("isDefault must be a boolean"),
   body("cardNumber")
     .optional()
-    .isLength({ max: 20 })
-    .withMessage("Card number must be at most 16 characters"),
+    .isLength({ max: 19 })
+    .withMessage("Card number must be at most 19 characters (16 digits + dashes)"),
 ];
 
 router.get("/payment-methods", authMiddleware, getPaymentMethods);
@@ -74,8 +74,8 @@ router.get(
 
 router.post(
   "/payment-methods",
-  createPaymentValidation,
   authMiddleware,
+  createPaymentValidation,
   validate,
   createPaymentMethod,
 );

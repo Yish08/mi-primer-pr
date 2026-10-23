@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import PropTypes from "prop-types";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "./BannerCarousel.css";
 import Button from "../common/Button";
 import Icon from "../common/Icon/Icon";
@@ -7,6 +7,7 @@ import Icon from "../common/Icon/Icon";
 export default function BannerCarousel({ banners = [] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const navigate = useNavigate();
 
   // Auto-cambio cada 5 segundos
   useEffect(() => {
@@ -107,26 +108,12 @@ export default function BannerCarousel({ banners = [] }) {
                     <div className="banner-actions">
                       <Button
                         variant="primary"
-                        size="large"
-                        onClick={() => {
-                          console.log(`Navegando a: ${banner.buttonLink}`);
-                          // Aquí iría la navegación real
-                        }}
+                        size="lg"
+                        onClick={() => navigate(banner.buttonLink)}
                         aria-label={`${banner.buttonText} - ${banner.title}`}
                       >
                         {banner.buttonText}
                       </Button>
-                      {banner.secondaryButton && (
-                        <Button
-                          variant="secondary"
-                          size="large"
-                          onClick={() =>
-                            console.log(`Acción secundaria: ${banner.title}`)
-                          }
-                        >
-                          {banner.secondaryButton}
-                        </Button>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -200,22 +187,3 @@ export default function BannerCarousel({ banners = [] }) {
     </div>
   );
 }
-
-BannerCarousel.propTypes = {
-  banners: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-      title: PropTypes.string.isRequired,
-      subtitle: PropTypes.string,
-      image: PropTypes.string.isRequired,
-      button: PropTypes.shape({
-        text: PropTypes.string.isRequired,
-        link: PropTypes.string.isRequired,
-      }),
-    })
-  ),
-};
-
-BannerCarousel.defaultProps = {
-  banners: [],
-};

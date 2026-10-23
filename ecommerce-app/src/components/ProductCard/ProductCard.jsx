@@ -1,11 +1,21 @@
-import { Link } from "react-router-dom";
-import { useCart } from "../../context/CartContext";
+import { useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useWishlist } from "../../context/WishlistContext";
+import { isAuthenticated } from "../../utils/auth";
+import AddToCartButton from "../common/AddToCartButton/AddToCartButton";
 import Badge from "../common/Badge";
-import Button from "../common/Button";
+import Icon from "../common/Icon/Icon";
 import "./ProductCard.css";
 
-export default function ProductCard({ product, orientation = "vertical" }) {
-  const { addToCart } = useCart();
+export default function ProductCard({
+  product,
+  orientation = "vertical",
+  className = "",
+}) {
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  // La foto que el carrito animado se lleva al Header
+  const imageRef = useRef(null);
+  const navigate = useNavigate();
   const { name, price, stock, imagesUrl, description } = product || {};
 
   if (!product) {
@@ -20,18 +30,40 @@ export default function ProductCard({ product, orientation = "vertical" }) {
   }
 
   const stockBadge =
-    stock > 0
-      ? { text: "En stock", variant: "success" }
-      : { text: "Agotado", variant: "error" };
+    stock <= 0
+      ? { text: "Agotado", variant: "error" }
+      : stock <= 5
+        ? { text: `¡${stock === 1 ? "Queda" : "Quedan"} ${stock}!`, variant: "warning" }
+        : { text: "En stock", variant: "success" };
   const hasDiscount = product.discount && product.discount > 0;
-  const handleAddToCart = () => addToCart(product, 1);
   const productLink = `/product/${product._id}`;
-  const cardClass = `product-card product-card--${orientation}`;
+  const cardClass = `product-card product-card--${orientation} ${className}`.trim();
+
+  const isFavorite = isInWishlist(product._id);
+  const favoriteLabel = isFavorite ? "Quitar de favoritos" : "Agregar a favoritos";
+  const handleToggleWishlist = () => {
+    if (!isAuthenticated()) {
+      navigate("/login");
+      return;
+    }
+    toggleWishlist(product);
+  };
 
   return (
     <div className={cardClass}>
+      <button
+        type="button"
+        className={`product-card-wishlist${isFavorite ? " is-active" : ""}`}
+        onClick={handleToggleWishlist}
+        aria-pressed={isFavorite}
+        aria-label={favoriteLabel}
+        title={favoriteLabel}
+      >
+        <Icon name="heart" size={20} />
+      </button>
       <Link to={productLink} className="product-card-image-link">
         <img
+          ref={imageRef}
           src={imagesUrl ? imagesUrl[0] : "/img/products/placeholder.svg"}
           alt={name}
           className="product-card-image"
@@ -68,14 +100,7 @@ export default function ProductCard({ product, orientation = "vertical" }) {
             <Badge text={`-${product.discount}%`} variant="warning" />
           )}
         </div>
-        <Button
-          variant="primary"
-          size="sm"
-          disabled={stock === 0}
-          onClick={handleAddToCart}
-        >
-          Agregar al carrito
-        </Button>
+        <AddToCartButton product={product} imageRef={imageRef} size="sm" />
       </div>
     </div>
   );

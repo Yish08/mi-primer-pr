@@ -15,13 +15,6 @@ export async function getCart(userId) {
     };
 }
 
-export async function addToCartAPI(userId, productId, quantity = 1) {
-    const response = await apiClient.post("/cart/add", {
-        userId, productId, quantity,
-    });
-    return response.data;
-}
-
 export async function replaceCart(cartId, userId, cartItems) {
     const products = cartItems.map((item) => ({
         product: item._id,

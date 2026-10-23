@@ -1,4 +1,3 @@
-import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import Icon from "../../components/common/Icon/Icon";
 import "./Breadcrumb.css";
@@ -12,7 +11,8 @@ const Breadcrumb = ({ categories = [] }) => {
     const hierarchy = [];
     let current = category;
 
-    while (current) {
+    // parentCategory solo se recorre si viene poblado (objeto), no si es un ObjectId
+    while (current && typeof current === "object") {
       hierarchy.unshift(current);
       current = current.parentCategory;
     }
@@ -65,25 +65,6 @@ const Breadcrumb = ({ categories = [] }) => {
       </div>
     </nav>
   );
-};
-
-Breadcrumb.propTypes = {
-  categories: PropTypes.oneOfType([
-    PropTypes.object,
-    PropTypes.arrayOf(
-      PropTypes.shape({
-        _id: PropTypes.string.isRequired,
-        name: PropTypes.string.isRequired,
-        description: PropTypes.string,
-        imageURL: PropTypes.string,
-        parentCategory: PropTypes.object,
-      })
-    ),
-  ]),
-};
-
-Breadcrumb.defaultProps = {
-  categories: [],
 };
 
 export default Breadcrumb;

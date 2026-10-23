@@ -46,8 +46,9 @@ const updateProductValidation = [
     .optional()
     .isInt({ min: 0 })
     .withMessage("Stock must be a non-negative integer"),
+  // null permite quitarle la categoria al producto
   body("category")
-    .optional()
+    .optional({ values: "null" })
     .isMongoId()
     .withMessage("Category must be a valid MongoDB ObjectId"),
 ];

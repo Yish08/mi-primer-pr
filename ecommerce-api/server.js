@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import connectCloudinary from "./src/config/cloudinary.conf.js";
 import connectDB from "./src/config/db.conf.js";
 import errorHandler from "./src/middlewares/errorHandler.js";
 import logger from "./src/middlewares/logger.js";
@@ -22,6 +23,7 @@ app.use(express.json());
 app.use(logger);
 
 connectDB();
+connectCloudinary();
 
 app.get("/", (req, res) => {
   res.send("API Ecommerce con MongoDB");

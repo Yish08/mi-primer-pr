@@ -18,7 +18,6 @@ export default function List({
               key={product._id}
               product={product}
               orientation="vertical"
-              className="list-item"
             />
           ))}
         </div>
@@ -29,7 +28,6 @@ export default function List({
               key={product._id}
               product={product}
               orientation="horizontal"
-              className="list-item"
             />
           ))}
         </div>

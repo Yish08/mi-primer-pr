@@ -8,6 +8,7 @@ import PaymentList from "../components/Checkout/Payment/PaymentList";
 import SummarySection from "../components/Checkout/shared/SummarySection";
 import Button from "../components/common/Button";
 import ErrorMessage from "../components/common/ErrorMessage/ErrorMessage";
+import Icon from "../components/common/Icon/Icon";
 import Loading from "../components/common/Loading/Loading";
 import { useCart } from "../context/CartContext";
 import {
@@ -29,7 +30,7 @@ import { createOrder } from "../services/orderService";
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { cartItems, total, clearCart } = useCart();
+  const { cartItems, total, clearCart, syncStock } = useCart();
 
   // --- LÓGICA DE NEGOCIO FINANCIERA ---
   // Cálculos derivados del estado del carrito.
@@ -46,6 +47,10 @@ export default function Checkout() {
   );
   
   const [isOrderFinished, setIsOrderFinished] = useState(false);
+  // Envio de la orden: bloquea el boton (evita ordenes dobles) y guarda el
+  // error para mostrarlo junto al boton, sin reemplazar toda la pagina
+  const [placingOrder, setPlacingOrder] = useState(false);
+  const [orderError, setOrderError] = useState(null);
 
   // Utilidad para formatear moneda (MXN)
   const formatMoney = (v) =>
@@ -133,7 +138,7 @@ export default function Checkout() {
     loadData();
   }, []);
 
-  // --- HANDLERS PARA DIRECCIONES (CRUD Local) ---
+  // --- HANDLERS PARA DIRECCIONES (API) ---
 
   /**
    * Alterna la visibilidad de la sección de direcciones.
@@ -178,7 +183,7 @@ export default function Checkout() {
   };
 
   /**
-   * Elimina una dirección de la lista local.
+   * Elimina una dirección en la API y recarga la lista.
    * Si la dirección eliminada estaba seleccionada, intenta seleccionar otra.
    */
   const handleAddressDelete = async(address) => {
@@ -229,7 +234,7 @@ export default function Checkout() {
     setAddressSectionOpen(false);
   };
 
-  // --- HANDLERS PARA PAGOS (CRUD Local) ---
+  // --- HANDLERS PARA PAGOS (API) ---
 
   /**
    * Alterna la visibilidad de la sección de pagos.
@@ -274,7 +279,7 @@ export default function Checkout() {
   };
 
   /**
-   * Elimina un método de pago de la lista local.
+   * Elimina un método de pago en la API y recarga la lista.
    * Si el pago eliminado estaba seleccionado, intenta seleccionar otro.
    * @param {Object} payment - El método de pago a eliminar.
    */
@@ -328,11 +333,11 @@ export default function Checkout() {
   // --- FINALIZACIÓN DE ORDEN ---
 
   /**
-   * Crea el objeto de orden final y simula el envío.
-   * Guarda en localStorage para persistencia simple y redirige.
+   * Crea la orden en la API, redirige a la confirmación y limpia el carrito.
    */
   const handleCreateOrder = async () => {
     if (
+      placingOrder ||
       !selectedAddress ||
       !selectedPayment ||
       !cartItems ||
@@ -353,13 +358,28 @@ export default function Checkout() {
       shippingCost: shippingCost,
     };
 
+    setPlacingOrder(true);
+    setOrderError(null);
     try{
       const nuevaOrden = await createOrder(orderData);
       setIsOrderFinished(true);
       navigate("/order-confirmation", { state: { nuevaOrden } });
       clearCart();
     } catch (err){
-      setLocalError("No se pudo crear la orden. Intentalo de nuevo")
+      if (err.response?.status === 409) {
+        // Alguien compro antes que tu: el carrito se ajusta al stock real y
+        // el aviso de CartView explica que cambio
+        await syncStock();
+        setOrderError(
+          "Algunos productos ya no tienen suficiente stock. Ajustamos tu carrito: revisa las cantidades y confirma de nuevo."
+        );
+      } else {
+        setOrderError(
+          err.response?.data?.message ||
+            "No se pudo crear la orden. Intentalo de nuevo"
+        );
+      }
+      setPlacingOrder(false);
     }
   };
 
@@ -458,7 +478,9 @@ export default function Checkout() {
                 <strong>Dirección de envío:</strong> {selectedAddress?.name}
               </p>
               <p>
-                <strong>Método de pago:</strong> {selectedPayment?.alias}
+                <strong>Método de pago:</strong> {selectedPayment?.cardHolderName}
+                {selectedPayment?.cardNumber &&
+                  ` · **** ${selectedPayment.cardNumber.slice(-4)}`}
               </p>
               <div className="order-costs">
                 <p>
@@ -483,9 +505,16 @@ export default function Checkout() {
                 ).toLocaleDateString()}
               </p>
             </div>
+            {orderError && (
+              <div className="checkout-order-error" role="alert">
+                <Icon name="alertCircle" size={18} />
+                <span>{orderError}</span>
+              </div>
+            )}
             <Button
               className="pay-button"
               disabled={
+                placingOrder ||
                 !selectedAddress ||
                 !selectedPayment ||
                 !cartItems ||
@@ -502,7 +531,7 @@ export default function Checkout() {
               }
               onClick={handleCreateOrder}
             >
-              Confirmar y Pagar
+              {placingOrder ? "Procesando..." : "Confirmar y Pagar"}
             </Button>
           </div>
         </div>

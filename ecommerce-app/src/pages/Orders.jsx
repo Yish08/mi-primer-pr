@@ -262,9 +262,6 @@ export default function Orders() {
                   <address className="order-address">
                     <strong>{selectedOrder.shippingAddress.name}</strong>
                     <p>{selectedOrder.shippingAddress.address1}</p>
-                    {selectedOrder.shippingAddress.address2 && (
-                      <p>{selectedOrder.shippingAddress.address2}</p>
-                    )}
                     <p>
                       {selectedOrder.shippingAddress.city},{" "}
                       {selectedOrder.shippingAddress.postalCode}
@@ -298,17 +295,14 @@ export default function Orders() {
                   {selectedOrder.items?.map((item, index) => (
                     <li key={`${selectedOrder.id}-${item.id || index}`}>
                       <div>
-                        <p>{item.name || item.title || "Producto"}</p>
+                        <p>{item.name || "Producto"}</p>
                         <span>
                           Cantidad: {item.quantity || 1} · Precio:{" "}
                           {formatMoney(item.price || 0)}
                         </span>
                       </div>
                       <strong>
-                        {formatMoney(
-                          item.subtotal ||
-                            (item.price || 0) * (item.quantity || 1)
-                        )}
+                        {formatMoney((item.price || 0) * (item.quantity || 1))}
                       </strong>
                     </li>
                   ))}

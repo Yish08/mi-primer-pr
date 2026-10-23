@@ -1,8 +1,17 @@
 import PaymentMethod from "../models/PaymentMethod.js";
 
+// Nunca exponer el hash de la contraseña al hacer populate del usuario
+const USER_FIELDS = "name email";
+
+const isOwnerOrAdmin = (req, ownerId) =>
+  req.user.role === "admin" || String(ownerId) === String(req.user.userId);
+
 const getPaymentMethods = async (req, res, next) => {
   try {
-    const paymentMethods = await PaymentMethod.find().populate("user");
+    // Cada usuario solo ve sus propios métodos de pago
+    const paymentMethods = await PaymentMethod.find({
+      user: req.user.userId,
+    }).populate("user", USER_FIELDS);
     res.status(200).json(paymentMethods);
   } catch (error) {
     next(error);
@@ -12,7 +21,10 @@ const getPaymentMethods = async (req, res, next) => {
 const getPaymentMethodById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const paymentMethod = await PaymentMethod.findById(id).populate("user");
+    const paymentMethod = await PaymentMethod.findById(id).populate(
+      "user",
+      USER_FIELDS,
+    );
     if (!paymentMethod) {
       return res.status(404).json({ message: "Payment method not found" });
     }
@@ -22,6 +34,7 @@ const getPaymentMethodById = async (req, res, next) => {
   }
 };
 
+// El CVV no se guarda: almacenarlo esta prohibido por PCI DSS
 const createPaymentMethod = async (req, res, next) => {
   try {
     const userId = req.user.userId;
@@ -34,11 +47,10 @@ const createPaymentMethod = async (req, res, next) => {
       bankName,
       accountNumber,
       isDefault,
-      cvv,
     } = req.body;
 
     if (isDefault) {
-      await PaymentMethod.updateMany({ user:userId }, { isDefault: false });
+      await PaymentMethod.updateMany({ user: userId }, { isDefault: false });
     }
 
     const newPaymentMethod = await PaymentMethod.create({
@@ -51,9 +63,8 @@ const createPaymentMethod = async (req, res, next) => {
       bankName,
       accountNumber,
       isDefault: isDefault || false,
-      cvv,
     });
-    await newPaymentMethod.populate("user");
+    await newPaymentMethod.populate("user", USER_FIELDS);
     res.status(201).json(newPaymentMethod);
   } catch (error) {
     next(error);
@@ -72,12 +83,15 @@ const updatePaymentMethod = async (req, res, next) => {
       bankName,
       accountNumber,
       isDefault,
-      cvv,
     } = req.body;
 
     const existing = await PaymentMethod.findById(id);
     if (!existing) {
       return res.status(404).json({ message: "Payment method not found" });
+    }
+
+    if (!isOwnerOrAdmin(req, existing.user)) {
+      return res.status(403).json({ message: "Access denied" });
     }
 
     if (isDefault) {
@@ -89,9 +103,9 @@ const updatePaymentMethod = async (req, res, next) => {
 
     const updatedPaymentMethod = await PaymentMethod.findByIdAndUpdate(
       id,
-      { type, cardNumber, cardHolderName, expiryDate, paypalEmail, bankName, accountNumber, isDefault, cvv },
+      { type, cardNumber, cardHolderName, expiryDate, paypalEmail, bankName, accountNumber, isDefault },
       { new: true }
-    ).populate("user");
+    ).populate("user", USER_FIELDS);
     res.status(200).json(updatedPaymentMethod);
   } catch (error) {
     next(error);
@@ -101,10 +115,16 @@ const updatePaymentMethod = async (req, res, next) => {
 const deletePaymentMethod = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const paymentMethod = await PaymentMethod.findByIdAndDelete(id);
+    const paymentMethod = await PaymentMethod.findById(id);
     if (!paymentMethod) {
       return res.status(404).json({ message: "Payment method not found" });
     }
+
+    if (!isOwnerOrAdmin(req, paymentMethod.user)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    await PaymentMethod.findByIdAndDelete(id);
     res.status(204).send();
   } catch (error) {
     next(error);

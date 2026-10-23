@@ -17,10 +17,10 @@ const getUserAddresses = async (req, res, next) => {
 
 const getAddressById = async (req, res, next) => {
   try {
-    const { addressId } = req.params;
+    const { id } = req.params;
     const userId = req.user.userId;
 
-    const address = await Address.findOne({ _id: addressId, user: userId });
+    const address = await Address.findOne({ _id: id, user: userId });
     if (!address) {
       return res.status(404).json({ message: "Address not found" });
     }
