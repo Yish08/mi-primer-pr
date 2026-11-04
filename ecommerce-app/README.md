@@ -251,6 +251,6 @@ El proyecto culminará en una **aplicación e-commerce completamente funcional**
 
 ---
 
-**⭐ ¡Síguenos en este viaje construyendo un e-commerce desde cero!**
+**⭐ ¡Síguenos en este viaje construyendo un e-commerce desde cero! y obtengas el sueño deseado**
 
 </div>
