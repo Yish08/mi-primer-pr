@@ -16,8 +16,6 @@ export default function ProductCard({
   // La foto que el carrito animado se lleva al Header
   const imageRef = useRef(null);
   const navigate = useNavigate();
-  const { name, price, stock, imagesUrl, description } = product || {};
-
   if (!product) {
     return (
       <div
@@ -29,19 +27,25 @@ export default function ProductCard({
     );
   }
 
+  const { _id, name, price, stock, imagesUrl, description, discount } = product;
+
+  const currentStock = typeof stock === "number" ? stock : 0;
   const stockBadge =
-    stock <= 0
+    currentStock <= 0
       ? { text: "Agotado", variant: "error" }
-      : stock <= 5
-        ? { text: `¡${stock === 1 ? "Queda" : "Quedan"} ${stock}!`, variant: "warning" }
+      : currentStock <= 5
+        ? { text: `¡${currentStock === 1 ? "Queda" : "Quedan"} ${currentStock}!`, variant: "warning" }
         : { text: "En stock", variant: "success" };
-  const hasDiscount = product.discount && product.discount > 0;
-  const productLink = `/product/${product._id}`;
+
+  const hasDiscount = Boolean(discount && Number(discount) > 0);
+  const productLink = _id ? `/product/${_id}` : "#";
   const cardClass = `product-card product-card--${orientation} ${className}`.trim();
 
-  const isFavorite = isInWishlist(product._id);
+  const isFavorite = Boolean(_id && isInWishlist(_id));
   const favoriteLabel = isFavorite ? "Quitar de favoritos" : "Agregar a favoritos";
-  const handleToggleWishlist = () => {
+
+  const handleToggleWishlist = (e) => {
+    e?.stopPropagation();
     if (!isAuthenticated()) {
       navigate("/login");
       return;
@@ -64,10 +68,11 @@ export default function ProductCard({
       <Link to={productLink} className="product-card-image-link">
         <img
           ref={imageRef}
-          src={imagesUrl ? imagesUrl[0] : "/img/products/placeholder.svg"}
-          alt={name}
+          src={imagesUrl?.[0] || "/img/products/placeholder.svg"}
+          alt={name || "Producto"}
           className="product-card-image"
           onError={(event) => {
+            event.target.onerror = null;
             event.target.src = "/img/products/placeholder.svg";
           }}
         />
@@ -97,7 +102,7 @@ export default function ProductCard({
         <div style={{ display: "flex", gap: "8px" }}>
           <Badge text={stockBadge.text} variant={stockBadge.variant} />
           {hasDiscount && (
-            <Badge text={`-${product.discount}%`} variant="warning" />
+            <Badge text={`-${discount}%`} variant="warning" />
           )}
         </div>
         <AddToCartButton product={product} imageRef={imageRef} size="sm" />
