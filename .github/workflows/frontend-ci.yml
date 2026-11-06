@@ -36,3 +36,17 @@ jobs:
         env:
           CI: true
 
+      - name: Run Cypress E2E tests
+        run: |
+          BROWSER=none npm start &
+          for i in $(seq 1 60); do
+            if curl -sSf http://localhost:3000 > /dev/null 2>&1; then
+              echo "Servidor frontend listo en http://localhost:3000"
+              break
+            fi
+            sleep 2
+          done
+          npm run cy:run
+        env:
+          CI: true
+
