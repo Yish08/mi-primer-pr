@@ -1,7 +1,65 @@
 import express from "express";
+import { body } from "express-validator";
 import { register, login, refresh } from "../controllers/authController.js";
+import validate from "../middlewares/validation.js";
 
 const router = express.Router();
+
+const registerValidation = [
+  body("name")
+    .isString()
+    .withMessage("Name must be a string")
+    .trim()
+    .notEmpty()
+    .withMessage("Name is required"),
+  body("email")
+    .isString()
+    .withMessage("Email must be a string")
+    .trim()
+    .isEmail()
+    .withMessage("Valid email is required"),
+  body("password")
+    .isString()
+    .withMessage("Password must be a string")
+    .notEmpty()
+    .withMessage("Password is required"),
+  body("phone")
+    .optional({ values: "falsy" })
+    .isString()
+    .withMessage("Phone must be a string"),
+];
+
+const loginValidation = [
+  body("email")
+    .isString()
+    .withMessage("Email must be a string")
+    .trim()
+    .isEmail()
+    .withMessage("Valid email is required"),
+  body("password")
+    .isString()
+    .withMessage("Password must be a string")
+    .notEmpty()
+    .withMessage("Password is required"),
+];
+
+const refreshValidation = [
+  (req, res, next) => {
+    if (
+      req.body?.refreshToken === undefined ||
+      req.body?.refreshToken === null ||
+      req.body?.refreshToken === ""
+    ) {
+      return res.status(401).json({ message: "No se mando Refresh token" });
+    }
+    next();
+  },
+  body("refreshToken")
+    .isString()
+    .withMessage("Refresh token must be a string")
+    .notEmpty()
+    .withMessage("Refresh token is required"),
+];
 
 /**
  * @openapi
@@ -36,7 +94,7 @@ const router = express.Router();
  *       400:
  *         description: El usuario ya existe
  */
-router.post("/register", register);
+router.post("/register", registerValidation, validate, register);
 
 /**
  * @openapi
@@ -65,7 +123,7 @@ router.post("/register", register);
  *       400:
  *         description: Credenciales inválidas o el usuario no existe
  */
-router.post("/login", login);
+router.post("/login", loginValidation, validate, login);
 
 /**
  * @openapi
@@ -91,6 +149,6 @@ router.post("/login", login);
  *       401:
  *         description: Refresh token faltante, inválido o expirado
  */
-router.post("/refresh", refresh);
+router.post("/refresh", refreshValidation, validate, refresh);
 
 export default router;
