@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     phone: { type: String, trim: true },
     role: { type: String, enum: ["customer", "admin"], default: "customer" },
+    refreshTokenId: { type: String, default: null },
   },
   { timestamps: true },
 );
