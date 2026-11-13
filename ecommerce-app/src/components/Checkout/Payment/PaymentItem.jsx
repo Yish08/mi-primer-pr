@@ -12,6 +12,7 @@ const PaymentItem = ({ payment, isSelected, onSelect, onEdit, onDelete }) => {
       className={`payment-item ${isSelected ? "selected" : ""} ${
         payment.isDefault ? "isDefault" : ""
       }`}
+      data-testid={`payment-item-${payment._id}`}
     >
       <div className="payment-content">
         <p>{maskCardNumber(payment.cardNumber)}</p>
@@ -22,7 +23,11 @@ const PaymentItem = ({ payment, isSelected, onSelect, onEdit, onDelete }) => {
         )}
       </div>
       <div className="payment-actions">
-        <Button onClick={() => onSelect(payment)} disabled={isSelected}>
+        <Button
+          onClick={() => onSelect(payment)}
+          disabled={isSelected}
+          data-testid={`select-payment-${payment._id}`}
+        >
           {isSelected ? "Seleccionada" : "Seleccionar"}
         </Button>
         <Button variant="secondary" onClick={() => onEdit(payment)}>

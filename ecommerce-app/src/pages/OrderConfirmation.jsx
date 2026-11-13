@@ -32,14 +32,14 @@ export default function OrderConfirmation() {
     }).format(v);
 
   return (
-    <div className="order-confirmation">
+    <div className="order-confirmation" data-testid="order-confirmation">
       <div className="confirmation-content">
         <div className="confirmation-icon">
           <Icon name="checkCircle" size={64} className="success"></Icon>
         </div>
         <h1>¡Gracias por tu compra!</h1>
         <p className="confirmation-message">
-          Tu pedido <strong>#{nuevaOrden._id || "N/A"}</strong> ha sido confirmado y
+          Tu pedido <strong data-testid="order-id">#{nuevaOrden._id || "N/A"}</strong> ha sido confirmado y
           está siendo procesado
         </p>
         <div className="confirmation-details">
