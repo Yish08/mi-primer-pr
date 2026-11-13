@@ -11,6 +11,7 @@ import "../config/db.conf.js";
 import authRoutes from "./authRoutes.js";
 import productRoutes from "./productRoutes.js";
 import orderRoutes from "./orderRoutes.js";
+import paymentMethodRoutes from "./paymentMethodRoutes.js";
 import userRoutes from "./userRoutes.js";
 import cartRoutes from "./cartRoutes.js";
 import swaggerUi from "swagger-ui-express";
@@ -20,6 +21,7 @@ import User from "../models/User.js";
 import Cart from "../models/Cart.js";
 import Product from "../models/Product.js";
 import Order from "../models/Order.js";
+import PaymentMethod from "../models/PaymentMethod.js";
 
 // Secretos de prueba (aislados en memoria, sin conectar a MongoDB real)
 process.env.JWT_SECRET = "test-jwt-secret-key";
@@ -108,6 +110,7 @@ describe("Rutas Críticas del Backend (ecommerce-api)", () => {
     app.use("/api/auth", authRoutes);
     app.use("/api", productRoutes);
     app.use("/api", orderRoutes);
+    app.use("/api", paymentMethodRoutes);
     app.use("/api", userRoutes);
     app.use("/api", cartRoutes);
     if (process.env.NODE_ENV !== "production") {
@@ -535,6 +538,43 @@ describe("Rutas Críticas del Backend (ecommerce-api)", () => {
         headers: { Authorization: `Bearer ${customerToken}` },
       });
       assert.equal(resOwner.status, 200);
+    });
+
+    it("POST & GET /api/payment-methods — guarda solo los últimos 4 dígitos (last4) y nunca devuelve cardNumber ni accountNumber completos", async () => {
+      let savedData = null;
+      PaymentMethod.create = async (data) => {
+        savedData = data;
+        return {
+          _id: PAYMENT_ID,
+          ...data,
+          populate: async function () {
+            return this;
+          },
+        };
+      };
+
+      const resCreate = await requestApp(app, "/api/payment-methods", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${customerToken}`,
+        },
+        body: JSON.stringify({
+          type: "credit_card",
+          cardNumber: "1234-5678-9012-3456",
+          cardHolderName: "Cliente Test",
+          expiryDate: "12/28",
+        }),
+      });
+
+      const bodyCreate = await resCreate.json();
+      assert.equal(resCreate.status, 201);
+      assert.equal(savedData.last4, "3456");
+      assert.equal(savedData.cardNumber, undefined);
+      assert.equal(savedData.accountNumber, undefined);
+      assert.equal(bodyCreate.last4, "3456");
+      assert.equal(bodyCreate.cardNumber, undefined);
+      assert.equal(bodyCreate.accountNumber, undefined);
     });
   });
 
