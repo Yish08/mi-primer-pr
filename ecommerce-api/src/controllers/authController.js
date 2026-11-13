@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
@@ -8,10 +9,17 @@ const generateToken = (userId, name, role) => {
   });
 };
 
-const generateRefreshToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_REFRESH_TOKEN, {
+const generateRefreshToken = (userId, jti) => {
+  return jwt.sign({ userId, jti }, process.env.JWT_REFRESH_TOKEN, {
     expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
   });
+};
+
+const persistRefreshTokenId = async (userDoc, refreshTokenId) => {
+  userDoc.refreshTokenId = refreshTokenId;
+  if (typeof userDoc.save === "function") {
+    await userDoc.save();
+  }
 };
 
 const generatePassword = async (password) => {
@@ -69,8 +77,11 @@ const login = async (req, res, next) => {
       return res.status(400).json({ message: "Credenciales inválidas" });
     }
 
+    const refreshTokenId = crypto.randomUUID();
+    await persistRefreshTokenId(userExist, refreshTokenId);
+
     const token = generateToken(userExist._id, userExist.name, userExist.role);
-    const refreshToken = generateRefreshToken(userExist._id);
+    const refreshToken = generateRefreshToken(userExist._id, refreshTokenId);
 
     res.status(200).json({ token, refreshToken });
   } catch (error) {
@@ -78,27 +89,86 @@ const login = async (req, res, next) => {
   }
 };
 
-//Funcion nueva para generar un nuevo token con el refresh 
+// Genera un nuevo token de acceso y rota el refreshToken en BD
 const refresh = async (req, res) => {
   try {
     const { refreshToken } = req.body;
-    
+
     if (!refreshToken) {
-      return res.status(401).json({ message: "No se mando Refresh token"});
+      return res.status(401).json({ message: "No se mando Refresh token" });
     }
 
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_TOKEN);
     const user = await User.findById(decoded.userId);
 
-    if (!user) {
-      return res.status(401).json({message : "Usuario no encontrado"})
+    if (!user || !decoded.jti || user.refreshTokenId !== decoded.jti) {
+      if (user && user.refreshTokenId) {
+        await persistRefreshTokenId(user, null);
+      }
+      return res.status(401).json({ message: "Refresh Token Invalido" });
     }
-    
-    const token = generateToken(user._id, user.name, user.role);
-    res.status(200).json({ token });
-  } catch (error) {
-    return res.status(401).json({message: "Refresh Token Invalido"});
-  }
-}
 
-export { register, login, refresh };
+    const newRefreshTokenId = crypto.randomUUID();
+    await persistRefreshTokenId(user, newRefreshTokenId);
+
+    const token = generateToken(user._id, user.name, user.role);
+    const newRefreshToken = generateRefreshToken(user._id, newRefreshTokenId);
+    res.status(200).json({ token, refreshToken: newRefreshToken });
+  } catch (error) {
+    return res.status(401).json({ message: "Refresh Token Invalido" });
+  }
+};
+
+const logout = async (req, res, next) => {
+  try {
+    let userId = req.user?.userId;
+    if (!userId && req.body?.refreshToken) {
+      try {
+        const decoded = jwt.verify(
+          req.body.refreshToken,
+          process.env.JWT_REFRESH_TOKEN,
+        );
+        userId = decoded.userId;
+      } catch {
+        // Si el token ya expiró o es inválido, igual respondemos 200
+      }
+    }
+
+    if (userId) {
+      const user = await User.findById(userId);
+      if (user) {
+        await persistRefreshTokenId(user, null);
+      }
+    }
+
+    res.status(200).json({ message: "Sesión cerrada exitosamente" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const changePassword = async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+    const { currentPassword, newPassword } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Credenciales inválidas" });
+    }
+
+    user.password = await generatePassword(newPassword);
+    await persistRefreshTokenId(user, null);
+
+    res.status(200).json({ message: "Contraseña actualizada y sesiones revocadas" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export { register, login, refresh, logout, changePassword };

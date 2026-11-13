@@ -1,7 +1,14 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { body } from "express-validator";
-import { register, login, refresh } from "../controllers/authController.js";
+import {
+  register,
+  login,
+  refresh,
+  logout,
+  changePassword,
+} from "../controllers/authController.js";
+import authMiddleware from "../middlewares/authMiddleware.js";
 import validate from "../middlewares/validation.js";
 
 const router = express.Router();
@@ -163,5 +170,35 @@ router.post("/login", loginValidation, validate, login);
  *         description: Refresh token faltante, inválido o expirado
  */
 router.post("/refresh", refreshValidation, validate, refresh);
+
+const logoutValidation = [
+  body("refreshToken")
+    .optional()
+    .isString()
+    .withMessage("Refresh token must be a string"),
+];
+
+const changePasswordValidation = [
+  body("currentPassword")
+    .isString()
+    .withMessage("Current password must be a string")
+    .notEmpty()
+    .withMessage("Current password is required"),
+  body("newPassword")
+    .isString()
+    .withMessage("New password must be a string")
+    .isLength({ min: 8, max: 72 })
+    .withMessage("New password must be between 8 and 72 characters"),
+];
+
+router.post("/logout", logoutValidation, validate, logout);
+
+router.post(
+  "/change-password",
+  authMiddleware,
+  changePasswordValidation,
+  validate,
+  changePassword,
+);
 
 export default router;
