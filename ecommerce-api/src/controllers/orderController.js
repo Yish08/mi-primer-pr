@@ -1,8 +1,9 @@
 import Order from "../models/Order.js";
 import Product from "../models/Product.js";
 
-// Nunca exponer el hash de la contraseña al hacer populate del usuario
+// Nunca exponer el hash de la contraseña al hacer populate del usuario ni números completos de pago
 const USER_FIELDS = "name email";
+const PAYMENT_FIELDS = "type cardHolderName expiryDate last4 bankName paypalEmail isDefault";
 
 // Devuelve al inventario lo que se habia descontado
 const releaseStock = (items) =>
@@ -54,7 +55,7 @@ const getOrders = async (req, res, next) => {
       .populate("user", USER_FIELDS)
       .populate("products.productId")
       .populate("address")
-      .populate("paymentMethod");
+      .populate("paymentMethod", PAYMENT_FIELDS);
     res.json(orders);
   } catch (error) {
     next(error);
@@ -68,7 +69,7 @@ const getMyOrders = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .populate("products.productId")
       .populate("address")
-      .populate("paymentMethod", "type cardHolderName cardNumber");
+      .populate("paymentMethod", PAYMENT_FIELDS);
     res.json(orders);
   } catch (error) {
     next(error);
@@ -82,7 +83,7 @@ const getOrderById = async (req, res, next) => {
       .populate("user", USER_FIELDS)
       .populate("products.productId")
       .populate("address")
-      .populate("paymentMethod");
+      .populate("paymentMethod", PAYMENT_FIELDS);
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
@@ -128,7 +129,7 @@ const createOrder = async (req, res, next) => {
     await newOrder.populate("user", USER_FIELDS);
     await newOrder.populate("products.productId");
     await newOrder.populate("address");
-    await newOrder.populate("paymentMethod");
+    await newOrder.populate("paymentMethod", PAYMENT_FIELDS);
 
     res.status(201).json(newOrder);
   } catch (error) {
