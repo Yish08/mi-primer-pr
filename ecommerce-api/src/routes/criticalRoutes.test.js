@@ -3,9 +3,11 @@ import assert from "node:assert/strict";
 import { Duplex } from "node:stream";
 import http from "node:http";
 import express from "express";
+import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
+import "../config/db.conf.js";
 import authRoutes from "./authRoutes.js";
 import productRoutes from "./productRoutes.js";
 import orderRoutes from "./orderRoutes.js";
@@ -229,6 +231,50 @@ describe("Rutas Críticas del Backend (ecommerce-api)", () => {
         body: JSON.stringify({ refreshToken: "token.invalido.123" }),
       });
       assert.equal(resBadToken.status, 401);
+    });
+
+    it("POST /api/auth/* — bloquea inyección de operadores NoSQL ({ $ne: null } y { $regex: ... }) con 422 y activa sanitizeFilter", async () => {
+      assert.equal(mongoose.get("sanitizeFilter"), true);
+
+      const resLoginNe = await requestApp(app, "/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: { $ne: null },
+          password: "Password123!",
+        }),
+      });
+      assert.equal(resLoginNe.status, 422);
+
+      const resLoginRegex = await requestApp(app, "/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: { $regex: "^admin" },
+          password: "Password123!",
+        }),
+      });
+      assert.equal(resLoginRegex.status, 422);
+
+      const resRegisterNe = await requestApp(app, "/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Intruso",
+          email: { $ne: null },
+          password: "Password123!",
+        }),
+      });
+      assert.equal(resRegisterNe.status, 422);
+
+      const resRefreshNe = await requestApp(app, "/api/auth/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          refreshToken: { $ne: null },
+        }),
+      });
+      assert.equal(resRefreshNe.status, 422);
     });
   });
 
