@@ -1,9 +1,22 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
 import { body } from "express-validator";
 import { register, login, refresh } from "../controllers/authController.js";
 import validate from "../middlewares/validation.js";
 
 const router = express.Router();
+
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message: "Demasiados intentos desde esta IP, intenta de nuevo más tarde",
+  },
+});
+
+router.use(authLimiter);
 
 const registerValidation = [
   body("name")
