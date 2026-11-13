@@ -63,6 +63,7 @@ export default function Cart() {
               onClick={() => navigate("/checkout")}
               size="lg"
               disabled={!cartItems || cartItems.length === 0}
+              data-testid="proceed-to-checkout-btn"
               title={
                 !cartItems || cartItems.length === 0
                   ? "Agrega productos al carrito para continuar"

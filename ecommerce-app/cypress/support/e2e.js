@@ -1,6 +1,7 @@
 // Archivo de soporte global para pruebas E2E de Cypress.
 // Protege la base de datos real interceptando por defecto cualquier petición hacia /api/**
 // para que, aunque el backend (localhost:4000) esté encendido, Cypress NUNCA escriba ni modifique datos reales.
+import "./commands";
 
 beforeEach(() => {
   // 1. Bloquear/simular por defecto cualquier petición de escritura (POST, PUT, PATCH, DELETE) a la API

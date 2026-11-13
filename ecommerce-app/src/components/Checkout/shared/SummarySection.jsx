@@ -7,6 +7,7 @@ const SummarySection = ({
   summaryContent,
   isExpanded,
   onToggle,
+  testId,
   children,
 }) => {
   const handleToggle = (e) => {
@@ -20,14 +21,22 @@ const SummarySection = ({
   };
 
   return (
-    <div className={`summary-section ${isExpanded ? "expanded" : ""}`}>
+    <div
+      className={`summary-section ${isExpanded ? "expanded" : ""}`}
+      data-testid={testId}
+    >
       <div className="summary-header" onClick={handleToggle}>
         <div className="summary-title">
           <h3>{title}</h3>
           {!isExpanded && selected && (
             <div className="summary-content">
               {summaryContent}
-              <Button variant="text" size="sm" onClick={onToggle}>
+              <Button
+                variant="text"
+                size="sm"
+                onClick={onToggle}
+                data-testid={testId ? `${testId}-change-btn` : undefined}
+              >
                 Cambiar
               </Button>
             </div>
