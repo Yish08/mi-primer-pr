@@ -296,6 +296,36 @@ describe("Rutas Críticas del Backend (ecommerce-api)", () => {
       }
       assert.equal(lastRes.status, 429);
     });
+
+    it("POST /api/auth/register — exige longitud de contraseña entre 8 y 72 caracteres (422)", async () => {
+      const resTooShort = await requestApp(app, "/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-test-ip": "198.51.100.88",
+        },
+        body: JSON.stringify({
+          name: "Corto",
+          email: "corto@eshop.com",
+          password: "1234567",
+        }),
+      });
+      assert.equal(resTooShort.status, 422);
+
+      const resTooLong = await requestApp(app, "/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-test-ip": "198.51.100.88",
+        },
+        body: JSON.stringify({
+          name: "Largo",
+          email: "largo@eshop.com",
+          password: "A".repeat(73),
+        }),
+      });
+      assert.equal(resTooLong.status, 422);
+    });
   });
 
   // =========================================================================
