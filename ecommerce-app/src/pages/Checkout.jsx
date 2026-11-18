@@ -394,6 +394,7 @@ export default function Checkout() {
         <div className="checkout-left">
           <SummarySection
             title="1. Dirección de envío"
+            testId="address-section"
             selected={selectedAddress}
             summaryContent={
               <div className="selected-address">
@@ -430,6 +431,7 @@ export default function Checkout() {
 
           <SummarySection
             title="2. Método de pago"
+            testId="payment-section"
             selected={selectedPayment}
             summaryContent={
               <div className="selected-payment">
@@ -513,6 +515,7 @@ export default function Checkout() {
             )}
             <Button
               className="pay-button"
+              data-testid="confirm-order-btn"
               disabled={
                 placingOrder ||
                 !selectedAddress ||

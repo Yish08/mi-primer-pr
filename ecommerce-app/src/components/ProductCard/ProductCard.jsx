@@ -54,7 +54,7 @@ export default function ProductCard({
   };
 
   return (
-    <div className={cardClass}>
+    <div className={cardClass} data-testid="product-card">
       <button
         type="button"
         className={`product-card-wishlist${isFavorite ? " is-active" : ""}`}

@@ -75,10 +75,70 @@ const updateOrderStatusValidation = [
     .withMessage("Invalid payment status"),
 ];
 
+/**
+ * @openapi
+ * /orders:
+ *   get:
+ *     tags:
+ *       - Orders
+ *     summary: Lista todas las órdenes del sistema (solo administradores)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista completa de órdenes
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: Se requiere rol de administrador
+ */
 router.get("/orders", authMiddleware, isAdmin, getOrders);
 
+/**
+ * @openapi
+ * /orders/my-orders:
+ *   get:
+ *     tags:
+ *       - Orders
+ *     summary: Obtiene las órdenes del usuario autenticado
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de órdenes del usuario
+ *       401:
+ *         description: No autenticado
+ */
 router.get("/orders/my-orders", authMiddleware, getMyOrders);
 
+/**
+ * @openapi
+ * /orders/{id}:
+ *   get:
+ *     tags:
+ *       - Orders
+ *     summary: Obtiene el detalle de una orden por su ID (dueño de la orden o admin)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la orden (MongoDB ObjectId)
+ *     responses:
+ *       200:
+ *         description: Detalle de la orden
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: Acceso denegado (no eres el propietario ni administrador)
+ *       404:
+ *         description: Orden no encontrada
+ *       422:
+ *         description: ID inválido
+ */
 router.get(
   "/orders/:id",
   authMiddleware,
@@ -87,6 +147,33 @@ router.get(
   getOrderById,
 );
 
+/**
+ * @openapi
+ * /orders:
+ *   post:
+ *     tags:
+ *       - Orders
+ *     summary: Crea una nueva orden y descuenta el stock de los productos
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Order'
+ *     responses:
+ *       201:
+ *         description: Orden creada exitosamente
+ *       401:
+ *         description: No autenticado
+ *       404:
+ *         description: Uno de los productos ya no existe
+ *       409:
+ *         description: Stock insuficiente para alguno de los productos
+ *       422:
+ *         description: Error de validación en los datos enviados
+ */
 router.post(
   "/orders",
   authMiddleware,
@@ -95,6 +182,47 @@ router.post(
   createOrder,
 );
 
+/**
+ * @openapi
+ * /orders/{id}:
+ *   put:
+ *     tags:
+ *       - Orders
+ *     summary: Actualiza el estado o pago de una orden (solo administradores)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la orden (MongoDB ObjectId)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [pending, processing, shipped, delivered, cancelled]
+ *               paymentStatus:
+ *                 type: string
+ *                 enum: [pending, paid, failed, refunded]
+ *     responses:
+ *       200:
+ *         description: Estado de la orden actualizado
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: Se requiere rol de administrador
+ *       404:
+ *         description: Orden no encontrada
+ *       422:
+ *         description: Error de validación
+ */
 router.put(
   "/orders/:id",
   authMiddleware,

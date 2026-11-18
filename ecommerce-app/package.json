@@ -16,7 +16,11 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "cy:open": "ELECTRON_RUN_AS_NODE= cypress open",
+    "cy:run": "ELECTRON_RUN_AS_NODE= cypress run",
+    "cypress:open": "ELECTRON_RUN_AS_NODE= cypress open",
+    "cypress:run": "ELECTRON_RUN_AS_NODE= cypress run"
   },
   "eslintConfig": {
     "extends": [
@@ -37,6 +41,7 @@
     ]
   },
   "devDependencies": {
-    "@testing-library/user-event": "^14.6.8"
+    "@testing-library/user-event": "^14.6.8",
+    "cypress": "^16.2.1"
   }
 }

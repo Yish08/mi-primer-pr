@@ -363,9 +363,10 @@ export default function Header() {
                 className="cart-btn"
                 aria-label="Ver carrito de compras"
                 data-cart-target
+                data-testid="cart-button"
               >
                 <Icon name="shoppingCart" size={24} />
-                <span className="cart-badge">{totalItems}</span>
+                <span className="cart-badge" data-testid="cart-badge">{totalItems}</span>
               </Link>
 
               {/* Desktop Theme Toggle */}
