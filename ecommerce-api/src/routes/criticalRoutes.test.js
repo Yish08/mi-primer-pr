@@ -49,6 +49,7 @@ function requestApp(app, path, { method = "GET", headers = {}, body } = {}) {
         cb();
       },
     });
+    socket.remoteAddress = headers["x-test-ip"] || "127.0.0.1";
 
     const req = new http.IncomingMessage(socket);
     req.method = method;
@@ -275,6 +276,25 @@ describe("Rutas Críticas del Backend (ecommerce-api)", () => {
         }),
       });
       assert.equal(resRefreshNe.status, 422);
+    });
+
+    it("POST /api/auth/* — aplica rate limit por IP devolviendo 429 al exceder el límite", async () => {
+      const testIp = "198.51.100.77";
+      let lastRes;
+      for (let i = 0; i < 16; i++) {
+        lastRes = await requestApp(app, "/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-test-ip": testIp,
+          },
+          body: JSON.stringify({
+            email: "cliente@eshop.com",
+            password: "ClaveEquivocada",
+          }),
+        });
+      }
+      assert.equal(lastRes.status, 429);
     });
   });
 
