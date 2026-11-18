@@ -30,7 +30,9 @@ const register = async (req, res, next) => {
     const userExist = await checkUserExist(email);
 
     if (userExist) {
-      return res.status(400).json({ message: "User already exist" });
+      return res
+        .status(400)
+        .json({ message: "No se pudo completar el registro" });
     }
 
     const hashPassword = await generatePassword(password);
@@ -44,8 +46,8 @@ const register = async (req, res, next) => {
       phone,
     });
 
-    await Cart.create({ user: newUser._id, products: []}); 
     await newUser.save();
+    await Cart.create({ user: newUser._id, products: [] });
     res.status(201).json({ name, email, phone });
   } catch (error) {
     next(error);
@@ -58,15 +60,13 @@ const login = async (req, res, next) => {
     const userExist = await checkUserExist(email);
 
     if (!userExist) {
-      return res
-        .status(400)
-        .json({ message: "User does not exist. You must sign in." });
+      return res.status(400).json({ message: "Credenciales inválidas" });
     }
 
     const isMatch = await bcrypt.compare(password, userExist.password);
 
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid Credentials" });
+      return res.status(400).json({ message: "Credenciales inválidas" });
     }
 
     const token = generateToken(userExist._id, userExist.name, userExist.role);

@@ -147,7 +147,7 @@ describe("Rutas Críticas del Backend (ecommerce-api)", () => {
       assert.equal(body.name, "Nuevo Usuario");
     });
 
-    it("POST /api/auth/register — rechaza registro si el email ya existe (400)", async () => {
+    it("POST /api/auth/register — rechaza registro con respuesta neutra sin revelar si el email ya existe (400)", async () => {
       User.findOne = async () => ({
         _id: CUSTOMER_ID,
         email: "existente@eshop.com",
@@ -166,7 +166,8 @@ describe("Rutas Críticas del Backend (ecommerce-api)", () => {
 
       const body = await res.json();
       assert.equal(res.status, 400);
-      assert.equal(body.message, "User already exist");
+      assert.equal(body.message, "No se pudo completar el registro");
+      assert.doesNotMatch(body.message, /exist/i);
     });
 
     it("POST /api/auth/login — devuelve token y refreshToken con credenciales válidas (200)", async () => {
@@ -194,7 +195,7 @@ describe("Rutas Críticas del Backend (ecommerce-api)", () => {
       assert.ok(body.refreshToken);
     });
 
-    it("POST /api/auth/login — rechaza credenciales con contraseña incorrecta (400)", async () => {
+    it("POST /api/auth/login — devuelve el mismo mensaje 'Credenciales inválidas' para usuario inexistente o contraseña incorrecta (400)", async () => {
       const hashedPassword = await bcrypt.hash("Password123!", 4);
       User.findOne = async () => ({
         _id: CUSTOMER_ID,
@@ -204,7 +205,7 @@ describe("Rutas Críticas del Backend (ecommerce-api)", () => {
         role: "customer",
       });
 
-      const res = await requestApp(app, "/api/auth/login", {
+      const resWrongPass = await requestApp(app, "/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -213,9 +214,23 @@ describe("Rutas Críticas del Backend (ecommerce-api)", () => {
         }),
       });
 
-      const body = await res.json();
-      assert.equal(res.status, 400);
-      assert.equal(body.message, "Invalid Credentials");
+      const bodyWrongPass = await resWrongPass.json();
+      assert.equal(resWrongPass.status, 400);
+      assert.equal(bodyWrongPass.message, "Credenciales inválidas");
+
+      User.findOne = async () => null;
+      const resNoUser = await requestApp(app, "/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: "noexiste@eshop.com",
+          password: "Password123!",
+        }),
+      });
+
+      const bodyNoUser = await resNoUser.json();
+      assert.equal(resNoUser.status, 400);
+      assert.equal(bodyNoUser.message, "Credenciales inválidas");
     });
 
     it("POST /api/auth/refresh — rechaza petición sin refreshToken (401) y con token inválido (401)", async () => {
