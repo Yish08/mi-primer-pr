@@ -18,12 +18,8 @@ const paymentMethodSchema = new mongoose.Schema(
         "cash_on_delivery",
       ],
     },
-    // Para tarjetas de crédito/débito
-    // Primer dígito: Indica el esquema de la tarjeta (por ejemplo, 4 para Visa, 5 para Mastercard).
-    // Dígitos 2-6: Identifican al emisor de la tarjeta (por ejemplo, el banco o la entidad financiera).
-    // Dígitos 7-15: Representan el número de cuenta individual del titular de la tarjeta.
-    // Dígito 16: Es un dígito verificador calculado mediante un algoritmo para asegurar la validez de la tarjeta.
-    cardNumber: { type: String, maxLength: 19 },
+    // Solo se almacenan los últimos 4 dígitos de la tarjeta o cuenta (cumplimiento PCI-DSS / A04)
+    last4: { type: String, maxLength: 4 },
     cardHolderName: {
       type: String,
       trim: true,
@@ -37,15 +33,28 @@ const paymentMethodSchema = new mongoose.Schema(
     bankName: {
       type: String,
     },
-    accountNumber: {
-      type: String,
-    },
     isDefault: {
       type: Boolean,
       default: false,
     },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    toJSON: {
+      transform(_doc, ret) {
+        delete ret.cardNumber;
+        delete ret.accountNumber;
+        return ret;
+      },
+    },
+    toObject: {
+      transform(_doc, ret) {
+        delete ret.cardNumber;
+        delete ret.accountNumber;
+        return ret;
+      },
+    },
+  },
 );
 
 const PaymentMethod = mongoose.model("PaymentMethod", paymentMethodSchema);
