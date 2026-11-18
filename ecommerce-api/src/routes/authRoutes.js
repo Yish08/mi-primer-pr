@@ -34,8 +34,8 @@ const registerValidation = [
   body("password")
     .isString()
     .withMessage("Password must be a string")
-    .notEmpty()
-    .withMessage("Password is required"),
+    .isLength({ min: 8, max: 72 })
+    .withMessage("Password must be between 8 and 72 characters"),
   body("phone")
     .optional({ values: "falsy" })
     .isString()
