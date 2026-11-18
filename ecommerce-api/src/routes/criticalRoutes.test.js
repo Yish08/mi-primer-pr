@@ -344,6 +344,123 @@ describe("Rutas Críticas del Backend (ecommerce-api)", () => {
       });
       assert.equal(resTooLong.status, 422);
     });
+
+    it("POST /api/auth/refresh, /logout y /change-password — guarda id del refresh token en BD, lo rota al usarse y lo revoca en logout y cambio de contraseña", async () => {
+      const hashedPassword = await bcrypt.hash("Password123!", 4);
+      const mockUser = {
+        _id: CUSTOMER_ID,
+        name: "Cliente Test",
+        email: "cliente@eshop.com",
+        password: hashedPassword,
+        role: "customer",
+        refreshTokenId: null,
+        async save() {
+          return this;
+        },
+      };
+
+      User.findOne = async () => mockUser;
+      User.findById = async () => mockUser;
+
+      // 1. Login genera y guarda refreshTokenId en BD
+      const resLogin = await requestApp(app, "/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-test-ip": "198.51.100.99",
+        },
+        body: JSON.stringify({
+          email: "cliente@eshop.com",
+          password: "Password123!",
+        }),
+      });
+      const loginBody = await resLogin.json();
+      assert.equal(resLogin.status, 200);
+      assert.ok(mockUser.refreshTokenId);
+      const firstTokenId = mockUser.refreshTokenId;
+
+      // 2. Refresh rota el token y revoca el anterior
+      const resRefresh1 = await requestApp(app, "/api/auth/refresh", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-test-ip": "198.51.100.99",
+        },
+        body: JSON.stringify({ refreshToken: loginBody.refreshToken }),
+      });
+      const refreshBody1 = await resRefresh1.json();
+      assert.equal(resRefresh1.status, 200);
+      assert.ok(refreshBody1.token);
+      assert.ok(refreshBody1.refreshToken);
+      assert.notEqual(mockUser.refreshTokenId, firstTokenId);
+
+      // Reusar el refreshToken viejo falla con 401 y revoca la sesión activa
+      const resReuseOld = await requestApp(app, "/api/auth/refresh", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-test-ip": "198.51.100.99",
+        },
+        body: JSON.stringify({ refreshToken: loginBody.refreshToken }),
+      });
+      assert.equal(resReuseOld.status, 401);
+      assert.equal(mockUser.refreshTokenId, null);
+
+      // 3. Nuevo login + Logout revoca el refreshTokenId en BD
+      await requestApp(app, "/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-test-ip": "198.51.100.99",
+        },
+        body: JSON.stringify({
+          email: "cliente@eshop.com",
+          password: "Password123!",
+        }),
+      });
+      assert.ok(mockUser.refreshTokenId);
+
+      const resLogout = await requestApp(app, "/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-test-ip": "198.51.100.99",
+          Authorization: `Bearer ${loginBody.token}`,
+        },
+        body: JSON.stringify({ refreshToken: refreshBody1.refreshToken }),
+      });
+      assert.equal(resLogout.status, 200);
+      assert.equal(mockUser.refreshTokenId, null);
+
+      // 4. Cambio de contraseña revoca el refreshTokenId en BD
+      await requestApp(app, "/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-test-ip": "198.51.100.99",
+        },
+        body: JSON.stringify({
+          email: "cliente@eshop.com",
+          password: "Password123!",
+        }),
+      });
+      assert.ok(mockUser.refreshTokenId);
+
+      const resChangePass = await requestApp(app, "/api/auth/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-test-ip": "198.51.100.99",
+          Authorization: `Bearer ${customerToken}`,
+        },
+        body: JSON.stringify({
+          currentPassword: "Password123!",
+          newPassword: "NuevaPassword456!",
+        }),
+      });
+      assert.equal(resChangePass.status, 200);
+      assert.equal(mockUser.refreshTokenId, null);
+    });
   });
 
   // =========================================================================
