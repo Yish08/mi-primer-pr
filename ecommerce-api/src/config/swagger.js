@@ -13,7 +13,13 @@ const options = {
       version: "1.0.0",
       description: "Documentación completa de la API REST para eShop",
     },
-    servers: [{ url: "http://localhost:4000/api" }],
+    servers: [
+      {
+        url:
+          process.env.API_URL ||
+          `http://localhost:${process.env.PORT || 4000}/api`,
+      },
+    ],
     components: {
       securitySchemes: {
         bearerAuth: {

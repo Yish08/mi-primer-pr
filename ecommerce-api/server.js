@@ -15,9 +15,19 @@ dotenv.config();
 const createApp = () => {
   const app = express();
 
+  const rawCorsOrigin =
+    process.env.CORS_ORIGIN ||
+    process.env.FRONTEND_URL ||
+    "http://localhost:3000";
+  const allowedOrigins = rawCorsOrigin
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/$/, ""))
+    .filter(Boolean);
+
   app.use(
     cors({
-      origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+      origin:
+        allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
       credentials: true,
     }),
   );
