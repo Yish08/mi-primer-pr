@@ -3,12 +3,15 @@ import assert from "node:assert/strict";
 import { Duplex } from "node:stream";
 import http from "node:http";
 import express from "express";
+import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
+import "../config/db.conf.js";
 import authRoutes from "./authRoutes.js";
 import productRoutes from "./productRoutes.js";
 import orderRoutes from "./orderRoutes.js";
+import paymentMethodRoutes from "./paymentMethodRoutes.js";
 import userRoutes from "./userRoutes.js";
 import cartRoutes from "./cartRoutes.js";
 import swaggerUi from "swagger-ui-express";
@@ -18,6 +21,7 @@ import User from "../models/User.js";
 import Cart from "../models/Cart.js";
 import Product from "../models/Product.js";
 import Order from "../models/Order.js";
+import PaymentMethod from "../models/PaymentMethod.js";
 
 // Secretos de prueba (aislados en memoria, sin conectar a MongoDB real)
 process.env.JWT_SECRET = "test-jwt-secret-key";
@@ -47,6 +51,7 @@ function requestApp(app, path, { method = "GET", headers = {}, body } = {}) {
         cb();
       },
     });
+    socket.remoteAddress = headers["x-test-ip"] || "127.0.0.1";
 
     const req = new http.IncomingMessage(socket);
     req.method = method;
@@ -105,6 +110,7 @@ describe("Rutas Críticas del Backend (ecommerce-api)", () => {
     app.use("/api/auth", authRoutes);
     app.use("/api", productRoutes);
     app.use("/api", orderRoutes);
+    app.use("/api", paymentMethodRoutes);
     app.use("/api", userRoutes);
     app.use("/api", cartRoutes);
     if (process.env.NODE_ENV !== "production") {
@@ -144,7 +150,7 @@ describe("Rutas Críticas del Backend (ecommerce-api)", () => {
       assert.equal(body.name, "Nuevo Usuario");
     });
 
-    it("POST /api/auth/register — rechaza registro si el email ya existe (400)", async () => {
+    it("POST /api/auth/register — rechaza registro con respuesta neutra sin revelar si el email ya existe (400)", async () => {
       User.findOne = async () => ({
         _id: CUSTOMER_ID,
         email: "existente@eshop.com",
@@ -163,7 +169,8 @@ describe("Rutas Críticas del Backend (ecommerce-api)", () => {
 
       const body = await res.json();
       assert.equal(res.status, 400);
-      assert.equal(body.message, "User already exist");
+      assert.equal(body.message, "No se pudo completar el registro");
+      assert.doesNotMatch(body.message, /exist/i);
     });
 
     it("POST /api/auth/login — devuelve token y refreshToken con credenciales válidas (200)", async () => {
@@ -191,7 +198,7 @@ describe("Rutas Críticas del Backend (ecommerce-api)", () => {
       assert.ok(body.refreshToken);
     });
 
-    it("POST /api/auth/login — rechaza credenciales con contraseña incorrecta (400)", async () => {
+    it("POST /api/auth/login — devuelve el mismo mensaje 'Credenciales inválidas' para usuario inexistente o contraseña incorrecta (400)", async () => {
       const hashedPassword = await bcrypt.hash("Password123!", 4);
       User.findOne = async () => ({
         _id: CUSTOMER_ID,
@@ -201,7 +208,7 @@ describe("Rutas Críticas del Backend (ecommerce-api)", () => {
         role: "customer",
       });
 
-      const res = await requestApp(app, "/api/auth/login", {
+      const resWrongPass = await requestApp(app, "/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -210,9 +217,23 @@ describe("Rutas Críticas del Backend (ecommerce-api)", () => {
         }),
       });
 
-      const body = await res.json();
-      assert.equal(res.status, 400);
-      assert.equal(body.message, "Invalid Credentials");
+      const bodyWrongPass = await resWrongPass.json();
+      assert.equal(resWrongPass.status, 400);
+      assert.equal(bodyWrongPass.message, "Credenciales inválidas");
+
+      User.findOne = async () => null;
+      const resNoUser = await requestApp(app, "/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: "noexiste@eshop.com",
+          password: "Password123!",
+        }),
+      });
+
+      const bodyNoUser = await resNoUser.json();
+      assert.equal(resNoUser.status, 400);
+      assert.equal(bodyNoUser.message, "Credenciales inválidas");
     });
 
     it("POST /api/auth/refresh — rechaza petición sin refreshToken (401) y con token inválido (401)", async () => {
@@ -229,6 +250,216 @@ describe("Rutas Críticas del Backend (ecommerce-api)", () => {
         body: JSON.stringify({ refreshToken: "token.invalido.123" }),
       });
       assert.equal(resBadToken.status, 401);
+    });
+
+    it("POST /api/auth/* — bloquea inyección de operadores NoSQL ({ $ne: null } y { $regex: ... }) con 422 y activa sanitizeFilter", async () => {
+      assert.equal(mongoose.get("sanitizeFilter"), true);
+
+      const resLoginNe = await requestApp(app, "/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: { $ne: null },
+          password: "Password123!",
+        }),
+      });
+      assert.equal(resLoginNe.status, 422);
+
+      const resLoginRegex = await requestApp(app, "/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: { $regex: "^admin" },
+          password: "Password123!",
+        }),
+      });
+      assert.equal(resLoginRegex.status, 422);
+
+      const resRegisterNe = await requestApp(app, "/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Intruso",
+          email: { $ne: null },
+          password: "Password123!",
+        }),
+      });
+      assert.equal(resRegisterNe.status, 422);
+
+      const resRefreshNe = await requestApp(app, "/api/auth/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          refreshToken: { $ne: null },
+        }),
+      });
+      assert.equal(resRefreshNe.status, 422);
+    });
+
+    it("POST /api/auth/* — aplica rate limit por IP devolviendo 429 al exceder el límite", async () => {
+      const testIp = "198.51.100.77";
+      let lastRes;
+      for (let i = 0; i < 16; i++) {
+        lastRes = await requestApp(app, "/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-test-ip": testIp,
+          },
+          body: JSON.stringify({
+            email: "cliente@eshop.com",
+            password: "ClaveEquivocada",
+          }),
+        });
+      }
+      assert.equal(lastRes.status, 429);
+    });
+
+    it("POST /api/auth/register — exige longitud de contraseña entre 8 y 72 caracteres (422)", async () => {
+      const resTooShort = await requestApp(app, "/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-test-ip": "198.51.100.88",
+        },
+        body: JSON.stringify({
+          name: "Corto",
+          email: "corto@eshop.com",
+          password: "1234567",
+        }),
+      });
+      assert.equal(resTooShort.status, 422);
+
+      const resTooLong = await requestApp(app, "/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-test-ip": "198.51.100.88",
+        },
+        body: JSON.stringify({
+          name: "Largo",
+          email: "largo@eshop.com",
+          password: "A".repeat(73),
+        }),
+      });
+      assert.equal(resTooLong.status, 422);
+    });
+
+    it("POST /api/auth/refresh, /logout y /change-password — guarda id del refresh token en BD, lo rota al usarse y lo revoca en logout y cambio de contraseña", async () => {
+      const hashedPassword = await bcrypt.hash("Password123!", 4);
+      const mockUser = {
+        _id: CUSTOMER_ID,
+        name: "Cliente Test",
+        email: "cliente@eshop.com",
+        password: hashedPassword,
+        role: "customer",
+        refreshTokenId: null,
+        async save() {
+          return this;
+        },
+      };
+
+      User.findOne = async () => mockUser;
+      User.findById = async () => mockUser;
+
+      // 1. Login genera y guarda refreshTokenId en BD
+      const resLogin = await requestApp(app, "/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-test-ip": "198.51.100.99",
+        },
+        body: JSON.stringify({
+          email: "cliente@eshop.com",
+          password: "Password123!",
+        }),
+      });
+      const loginBody = await resLogin.json();
+      assert.equal(resLogin.status, 200);
+      assert.ok(mockUser.refreshTokenId);
+      const firstTokenId = mockUser.refreshTokenId;
+
+      // 2. Refresh rota el token y revoca el anterior
+      const resRefresh1 = await requestApp(app, "/api/auth/refresh", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-test-ip": "198.51.100.99",
+        },
+        body: JSON.stringify({ refreshToken: loginBody.refreshToken }),
+      });
+      const refreshBody1 = await resRefresh1.json();
+      assert.equal(resRefresh1.status, 200);
+      assert.ok(refreshBody1.token);
+      assert.ok(refreshBody1.refreshToken);
+      assert.notEqual(mockUser.refreshTokenId, firstTokenId);
+
+      // Reusar el refreshToken viejo falla con 401 y revoca la sesión activa
+      const resReuseOld = await requestApp(app, "/api/auth/refresh", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-test-ip": "198.51.100.99",
+        },
+        body: JSON.stringify({ refreshToken: loginBody.refreshToken }),
+      });
+      assert.equal(resReuseOld.status, 401);
+      assert.equal(mockUser.refreshTokenId, null);
+
+      // 3. Nuevo login + Logout revoca el refreshTokenId en BD
+      await requestApp(app, "/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-test-ip": "198.51.100.99",
+        },
+        body: JSON.stringify({
+          email: "cliente@eshop.com",
+          password: "Password123!",
+        }),
+      });
+      assert.ok(mockUser.refreshTokenId);
+
+      const resLogout = await requestApp(app, "/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-test-ip": "198.51.100.99",
+          Authorization: `Bearer ${loginBody.token}`,
+        },
+        body: JSON.stringify({ refreshToken: refreshBody1.refreshToken }),
+      });
+      assert.equal(resLogout.status, 200);
+      assert.equal(mockUser.refreshTokenId, null);
+
+      // 4. Cambio de contraseña revoca el refreshTokenId en BD
+      await requestApp(app, "/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-test-ip": "198.51.100.99",
+        },
+        body: JSON.stringify({
+          email: "cliente@eshop.com",
+          password: "Password123!",
+        }),
+      });
+      assert.ok(mockUser.refreshTokenId);
+
+      const resChangePass = await requestApp(app, "/api/auth/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-test-ip": "198.51.100.99",
+          Authorization: `Bearer ${customerToken}`,
+        },
+        body: JSON.stringify({
+          currentPassword: "Password123!",
+          newPassword: "NuevaPassword456!",
+        }),
+      });
+      assert.equal(resChangePass.status, 200);
+      assert.equal(mockUser.refreshTokenId, null);
     });
   });
 
@@ -424,6 +655,43 @@ describe("Rutas Críticas del Backend (ecommerce-api)", () => {
         headers: { Authorization: `Bearer ${customerToken}` },
       });
       assert.equal(resOwner.status, 200);
+    });
+
+    it("POST & GET /api/payment-methods — guarda solo los últimos 4 dígitos (last4) y nunca devuelve cardNumber ni accountNumber completos", async () => {
+      let savedData = null;
+      PaymentMethod.create = async (data) => {
+        savedData = data;
+        return {
+          _id: PAYMENT_ID,
+          ...data,
+          populate: async function () {
+            return this;
+          },
+        };
+      };
+
+      const resCreate = await requestApp(app, "/api/payment-methods", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${customerToken}`,
+        },
+        body: JSON.stringify({
+          type: "credit_card",
+          cardNumber: "1234-5678-9012-3456",
+          cardHolderName: "Cliente Test",
+          expiryDate: "12/28",
+        }),
+      });
+
+      const bodyCreate = await resCreate.json();
+      assert.equal(resCreate.status, 201);
+      assert.equal(savedData.last4, "3456");
+      assert.equal(savedData.cardNumber, undefined);
+      assert.equal(savedData.accountNumber, undefined);
+      assert.equal(bodyCreate.last4, "3456");
+      assert.equal(bodyCreate.cardNumber, undefined);
+      assert.equal(bodyCreate.accountNumber, undefined);
     });
   });
 

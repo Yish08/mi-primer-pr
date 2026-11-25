@@ -49,7 +49,7 @@ const createUser = async (req, res, next) => {
 const updateUser = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, email, phone, role } = req.body;
+    const { name, email, phone, role, password } = req.body;
 
     if (email) {
       const emailInUse = await User.findOne({
@@ -61,10 +61,14 @@ const updateUser = async (req, res, next) => {
       }
     }
 
-    // Solo un admin puede cambiar roles; la contraseña no se cambia aquí
+    // Solo un admin puede cambiar roles; si cambia la contraseña se revoca el refreshTokenId
     const updates = { name, email, phone };
     if (req.user.role === "admin") {
       updates.role = role;
+    }
+    if (password) {
+      updates.password = await generatePassword(password);
+      updates.refreshTokenId = null;
     }
     Object.keys(updates).forEach(
       (key) => updates[key] === undefined && delete updates[key],
@@ -73,7 +77,7 @@ const updateUser = async (req, res, next) => {
     const updatedUser = await User.findByIdAndUpdate(id, updates, {
       new: true,
       runValidators: true,
-    }).select("-password");
+    }).select("-password -refreshTokenId");
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
     }
