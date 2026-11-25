@@ -1,39 +1,32 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Icon from "../../components/common/Icon/Icon";
+import useFetch from "../../hooks/useFetch";
 import { getAllCategories } from "../../services/categoriesService";
 import "./Navigation.css";
 
 const Navigation = ({ isMobile = false, onLinkClick }) => {
-  const [allCategories, setallCategories] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  useEffect(() => {
-    const loadCategories = async () => {
-      try{
-        const data = await getAllCategories();
+  const { data: allCategoriesData } = useFetch(() => getAllCategories(), [], {
+    initialData: [],
+  });
 
-        const allParentIds = new Set(
-          data
-            .filter((cat) => cat.parentCategory)
-            .map((cat) => cat.parentCategory._id)
-        );
+  const allCategories = useMemo(
+    () => (Array.isArray(allCategoriesData) ? allCategoriesData : []),
+    [allCategoriesData],
+  );
 
-        // Filtrar categorías que son padres o que no tienen parent
-        const mainCategories = data.filter(
-          (cat) => !cat.parentCategory || allParentIds.has(cat._id)
-        );
-        
-        setallCategories(data);
-        setCategories(mainCategories);
-      } catch (err){
-        setallCategories([]);
-        setCategories([]);
-      }
-    };
-    loadCategories();
-  }, []);
+  const categories = useMemo(() => {
+    const allParentIds = new Set(
+      allCategories
+        .filter((cat) => cat.parentCategory)
+        .map((cat) => cat.parentCategory._id),
+    );
+    return allCategories.filter(
+      (cat) => !cat.parentCategory || allParentIds.has(cat._id),
+    );
+  }, [allCategories]);
 
   // Función para obtener subcategorías de una categoría principal
   const getSubcategories = (parentId) => {

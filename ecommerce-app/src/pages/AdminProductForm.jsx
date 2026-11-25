@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Loading from "../components/common/Loading/Loading";
 import ErrorMessage from "../components/common/ErrorMessage/ErrorMessage";
 import ProductForm from "../components/Admin/ProductForm/ProductForm";
+import useFetch from "../hooks/useFetch";
 import { getAllCategories } from "../services/categoriesService";
 import {
   createProduct,
@@ -33,43 +34,35 @@ export default function AdminProductForm() {
   const isEdit = Boolean(productId);
   const navigate = useNavigate();
 
-  const [categories, setCategories] = useState([]);
-  const [initialValues, setInitialValues] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(null);
   const [submitError, setSubmitError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    let ignore = false;
+  const {
+    data,
+    loading,
+    error: loadError,
+  } = useFetch(
+    async () => {
+      const [categoriesData, product] = await Promise.all([
+        getAllCategories(),
+        isEdit ? getProductById(productId) : null,
+      ]);
+      return {
+        categories: categoriesData || [],
+        initialValues: product ? toFormValues(product) : {},
+      };
+    },
+    [isEdit, productId],
+    {
+      defaultErrorMessage: isEdit
+        ? "No se pudo cargar el producto"
+        : "No se pudieron cargar las categorías",
+      preferBackendMessage: true,
+    },
+  );
 
-    const loadData = async () => {
-      try {
-        const [categoriesData, product] = await Promise.all([
-          getAllCategories(),
-          isEdit ? getProductById(productId) : null,
-        ]);
-        if (ignore) return;
-        setCategories(categoriesData);
-        setInitialValues(product ? toFormValues(product) : {});
-      } catch (err) {
-        if (ignore) return;
-        setLoadError(
-          err.response?.data?.message ||
-            (isEdit
-              ? "No se pudo cargar el producto"
-              : "No se pudieron cargar las categorías")
-        );
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    };
-
-    loadData();
-    return () => {
-      ignore = true;
-    };
-  }, [isEdit, productId]);
+  const categories = data?.categories || [];
+  const initialValues = data?.initialValues || null;
 
   const handleSubmit = async (payload) => {
     setSubmitting(true);

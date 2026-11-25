@@ -1,33 +1,20 @@
-import { useEffect, useState } from "react";
 import BannerCarousel from "../components/BannerCarousel";
 import List from "../components/List/List";
 import ErrorMessage from "../components/common/ErrorMessage/ErrorMessage";
 import Loading from "../components/common/Loading/Loading";
 import homeImages from "../data/homeImages.json";
+import useFetch from "../hooks/useFetch";
 import { getAllProducts } from "../services/productsService";
 
 export default function Home() {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const productsData = await getAllProducts();
-        setProducts(productsData);
-      } catch (err) {
-        setError("No se pudieron cargar los productos. Intenta más tarde.");
-        setProducts([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadProducts();
-  }, []);
+  const {
+    data: products = [],
+    loading,
+    error,
+  } = useFetch(() => getAllProducts(), [], {
+    initialData: [],
+    defaultErrorMessage: "No se pudieron cargar los productos. Intenta más tarde.",
+  });
 
   return (
     <div>
