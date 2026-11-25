@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Button from "../components/common/Button";
 import Icon from "../components/common/Icon/Icon";
 import Loading from "../components/common/Loading/Loading";
 import ErrorMessage from "../components/common/ErrorMessage/ErrorMessage";
+import useFetch from "../hooks/useFetch";
 import { getMyOrders } from "../services/orderService";
 import "./Orders.css";
 
@@ -85,42 +86,32 @@ const formatDate = (isoString) => {
 };
 
 export default function Orders() {
-  const [orders, setOrders] = useState([]);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let ignore = false;
+  const {
+    data: orders = [],
+    loading,
+    error,
+  } = useFetch(
+    async () => {
+      const data = await getMyOrders();
+      return data
+        .map(normalizeOrder)
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+    },
+    [],
+    {
+      initialData: [],
+      defaultErrorMessage: "No se pudieron cargar tus pedidos",
+      preferBackendMessage: true,
+    },
+  );
 
-    const loadOrders = async () => {
-      try {
-        const data = await getMyOrders();
-        if (ignore) return;
-        const sortedOrders = data
-          .map(normalizeOrder)
-          .sort((a, b) => new Date(b.date) - new Date(a.date));
-        setOrders(sortedOrders);
-        setSelectedOrderId((current) => current ?? sortedOrders[0]?.id ?? null);
-      } catch (err) {
-        if (ignore) return;
-        setError(
-          err.response?.data?.message || "No se pudieron cargar tus pedidos"
-        );
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    };
-
-    loadOrders();
-    return () => {
-      ignore = true;
-    };
-  }, []);
+  const activeOrderId = selectedOrderId ?? orders[0]?.id ?? null;
 
   const selectedOrder = useMemo(
-    () => orders.find((order) => order.id === selectedOrderId) || null,
-    [orders, selectedOrderId]
+    () => orders.find((order) => order.id === activeOrderId) || null,
+    [orders, activeOrderId]
   );
 
   const detailStatusToken = selectedOrder?.statusToken || "pending";
@@ -188,7 +179,7 @@ export default function Orders() {
             {orders.map((order) => {
               const itemCount = order.items?.length || 0;
               const statusToken = order.statusToken;
-              const isActive = selectedOrderId === order.id;
+              const isActive = activeOrderId === order.id;
               return (
                 <button
                   key={order.id}

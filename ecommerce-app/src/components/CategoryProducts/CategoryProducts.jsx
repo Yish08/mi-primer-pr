@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import useFetch from "../../hooks/useFetch";
 import Breadcrumb from "../../layout/Breadcrumb/Breadcrumb";
 import { getCategoryById, getProductByCategory } from "../../services/categoriesService";
 import ProductCard from "../ProductCard/ProductCard";
@@ -8,38 +8,25 @@ import Loading from "../common/Loading/Loading";
 import "./CategoryProducts.css";
 
 export default function CategoryProducts({ categoryId }) {
-  const [category, setCategory] = useState(null);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data, loading, error } = useFetch(
+    async () => {
+      const [categoryData, productsData] = await Promise.all([
+        getCategoryById(categoryId),
+        getProductByCategory(categoryId),
+      ]);
+      if (!categoryData) return null;
+      return { category: categoryData, products: productsData || [] };
+    },
+    [categoryId],
+    {
+      notFoundMessage: "Categoría no encontrada",
+      defaultErrorMessage: "Error al cargar la categoría o productos",
+      emptyErrorMessage: "Categoría no encontrada",
+    },
+  );
 
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-
-    const loadCategoryAndProducts = async () => {
-      try {
-        // Cargar la categoría y sus productos
-        const [categoryData, productsData] = await Promise.all([
-          getCategoryById(categoryId),
-          getProductByCategory(categoryId),
-        ]);
-        if (!categoryData) {
-          setError("Categoría no encontrada");
-          return;
-        }
-
-        setCategory(categoryData);
-        setProducts(productsData);
-      } catch (err) {
-        setError("Error al cargar la categoría o productos");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadCategoryAndProducts();
-  }, [categoryId]);
+  const category = data?.category || null;
+  const products = data?.products || [];
 
   if (loading) {
     return (

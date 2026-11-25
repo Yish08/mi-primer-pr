@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import useFetch from "../../hooks/useFetch";
 import { getCurrentUser } from "../../utils/auth";
 import { getUserById, updateUser } from "../../services/usersService";
 import Button from "../common/Button";
@@ -44,36 +45,27 @@ const getErrorMessage = (err, fallback) =>
   fallback;
 
 export default function ProfileCard() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
-  useEffect(() => {
-    let ignore = false;
-
-    const loadUser = async () => {
-      try {
-        const { userId } = getCurrentUser() || {};
-        const data = await getUserById(userId);
-        if (!ignore) setUser(data);
-      } catch (err) {
-        if (!ignore) {
-          setLoadError(getErrorMessage(err, "No se pudo cargar tu perfil"));
-        }
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    };
-
-    loadUser();
-    return () => {
-      ignore = true;
-    };
-  }, []);
+  const {
+    data: user,
+    setData: setUser,
+    loading,
+    error: loadError,
+  } = useFetch(
+    async () => {
+      const { userId } = getCurrentUser() || {};
+      return await getUserById(userId);
+    },
+    [],
+    {
+      defaultErrorMessage: "No se pudo cargar tu perfil",
+      preferBackendMessage: true,
+    },
+  );
 
   // Ocultar el mensaje de éxito después de unos segundos
   useEffect(() => {

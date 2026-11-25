@@ -11,6 +11,7 @@ import ErrorMessage from "../components/common/ErrorMessage/ErrorMessage";
 import Icon from "../components/common/Icon/Icon";
 import Loading from "../components/common/Loading/Loading";
 import { useCart } from "../context/CartContext";
+import useFetch from "../hooks/useFetch";
 import {
   createPaymetMethod,
   deletePaymetMethod,
@@ -78,10 +79,6 @@ export default function Checkout() {
   const [addresses, setAddresses] = useState([]);
   const [payments, setPayments] = useState([]);
 
-  // Estados de carga y error para la obtención inicial de datos
-  const [loadingLocal, setLoadingLocal] = useState(true);
-  const [localError, setLocalError] = useState(null);
-
   // Control de visibilidad de formularios (Modo Edición/Creación)
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
@@ -98,45 +95,35 @@ export default function Checkout() {
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [selectedPayment, setSelectedPayment] = useState(null);
 
-  // --- CARGA DE DATOS INICIAL ---
-  useEffect(() => {
-    /**
-     * Función asíncrona para cargar datos iniciales.
-     * Obtiene direcciones y métodos de pago en paralelo.
-     * Establece los valores por defecto si existen.
-     */
-    async function loadData() {
-      setLoadingLocal(true);
-      setLocalError(null);
-      try {
-        // Carga paralela de datos para mejorar performance
-        const [addrList, firstAddress, payList, firstPayment] =
-          await Promise.all([
-            getShippingAddresses(),
-            getDefaultShippingAddress(),
-            getPaymentMethods(),
-            getDefaultPaymentMethod(),
-          ]);
+  // --- CARGA DE DATOS INICIAL CON useFetch ---
+  const {
+    loading: loadingLocal,
+    error: localError,
+    setError: setLocalError,
+  } = useFetch(
+    async () => {
+      const [addrList, firstAddress, payList, firstPayment] =
+        await Promise.all([
+          getShippingAddresses(),
+          getDefaultShippingAddress(),
+          getPaymentMethods(),
+          getDefaultPaymentMethod(),
+        ]);
 
-        setAddresses(addrList || []);
-        setPayments(payList || []);
+      setAddresses(addrList || []);
+      setPayments(payList || []);
+      setSelectedAddress(firstAddress);
+      setSelectedPayment(firstPayment);
+      setAddressSectionOpen(!firstAddress);
+      setPaymentSectionOpen(!firstPayment);
 
-        // Pre-seleccionar valores por defecto
-        setSelectedAddress(firstAddress);
-        setSelectedPayment(firstPayment);
-
-        // Abrir secciones si no hay datos seleccionados
-        setAddressSectionOpen(!firstAddress);
-        setPaymentSectionOpen(!firstPayment);
-      } catch (err) {
-        setLocalError("No se pudo cargar direcciones o métodos de pago.");
-      } finally {
-        setLoadingLocal(false);
-      }
-    }
-
-    loadData();
-  }, []);
+      return { addresses: addrList || [], payments: payList || [] };
+    },
+    [],
+    {
+      defaultErrorMessage: "No se pudo cargar direcciones o métodos de pago.",
+    },
+  );
 
   // --- HANDLERS PARA DIRECCIONES (API) ---
 
